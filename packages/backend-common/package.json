@@ -1,7 +1,7 @@
 {
   "name": "@repo/backend-common",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "dist/index.js",
   "exports": {
     "./config": "./src/index.ts"
   },
@@ -15,5 +15,9 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "",
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "@types/node":"^22.12.0"
+  }
 }
