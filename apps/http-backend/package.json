@@ -7,6 +7,13 @@
     "start": "node ./dist/index.js",
     "dev": "npm run build && npm run start"
   },
+
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@repo/backend-common": "workspace:*",
+    "@repo/common": "workspace:*"
+  },
+
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -17,11 +24,6 @@
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
     "@repo/db": "workspace:*"
-  },
-  "devDependencies": {
-    "@repo/typescript-config": "workspace:*",
-    "@repo/backend-common": "workspace:*",
-    "@repo/common": "workspace:*"
   },
   "description": ""
 }
