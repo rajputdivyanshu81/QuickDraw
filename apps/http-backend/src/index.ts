@@ -8,20 +8,35 @@ import { prismaClient } from '@repo/db/client';
 
 const app = express();
 
-app.post("/signup", (req, res) => {
+app.post("/signup", async (req, res) => {
 
-    const data = CreateUserSchema.safeParse(req.body);
-    if(!data.success){
-       res.json({
-            message:"Incorrect Inputs"
+    const parsedData = CreateUserSchema.safeParse(req.body);
+    if (!parsedData.success) {
+        console.log(parsedData.error);
+        res.json({
+            message: "Incorrect inputs"
         })
         return;
     }
-    res.json({
-        //db call
-        userId: "123"
-    })
-});
+    try {
+        const user = await prismaClient.user.create({
+            data: {
+                email: parsedData.data?.username,
+                // TODO: Hash the pw
+                password: parsedData.data.password,
+                name: parsedData.data.name
+            }
+        })
+        res.json({
+            userId: user.id
+        })
+    } catch(e) {
+        res.status(411).json({
+            message: "User already exists with this username"
+        })
+    }
+})
+
 
 app.post("/signin", (req, res) => {
 
