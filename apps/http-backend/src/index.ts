@@ -74,8 +74,6 @@ app.post("/signin", async (req, res) => {
     
 })
 
-
-
 app.post("/room", middleware, async (req, res) => {
     const parsedData = CreateRoomSchema.safeParse(req.body);
     if (!parsedData.success) {
@@ -104,7 +102,6 @@ app.post("/room", middleware, async (req, res) => {
         })
     }
 })
-
 
 app.get("/chats/:roomId", async (req, res) => {
     try {
