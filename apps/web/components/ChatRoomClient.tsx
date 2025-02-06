@@ -28,16 +28,18 @@ export function ChatRoomClient({
                     setChats(c => [...c, {message: parsedData.message}])
                 }
             }
-            socket?.close();
         }
     }, [socket, loading, id])
 
-    return <div>
-        {chats.map(m => <div>{m.message}</div>)}
+return <div>
+        {chats.map((m, index) => (
+            <div key={index}>{m.message}</div>
+        ))}
 
         <input type="text" value={currentMessage} onChange={e => {
             setCurrentMessage(e.target.value);
         }}></input>
+        
         <button onClick={() => {
             socket?.send(JSON.stringify({
                 type: "chat",
