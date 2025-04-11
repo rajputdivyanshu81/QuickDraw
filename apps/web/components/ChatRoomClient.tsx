@@ -1,15 +1,16 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
 import { useSocket } from "../hooks/useSocket";
 
-export function ChatRoomClient({
+export const ChatRoomClient: React.FC<{
+    messages: {message: string}[];
+    id: string;
+}> = ({
     messages,
     id
-}: {
-    messages: {message: string}[];
-    id: string
-}) {
+}) => {
     const [chats, setChats] = useState(messages);
     const [currentMessage, setCurrentMessage] = useState("");
     const {socket, loading} = useSocket();
@@ -31,15 +32,12 @@ export function ChatRoomClient({
         }
     }, [socket, loading, id])
 
-return <div>
-        {chats.map((m, index) => (
-            <div key={index}>{m.message}</div>
-        ))}
+    return <div>
+        {chats.map(m => <div>{m.message}</div>)}
 
         <input type="text" value={currentMessage} onChange={e => {
             setCurrentMessage(e.target.value);
         }}></input>
-        
         <button onClick={() => {
             socket?.send(JSON.stringify({
                 type: "chat",
