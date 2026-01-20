@@ -15,6 +15,7 @@ export function Canvas({
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [selectedTool, setSelectedTool] = useState<Tool>("rect");
     const [selectedColor, setSelectedColor] = useState<string>("black");
+    const [zoom, setZoom] = useState<number>(1);
 
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
@@ -27,12 +28,12 @@ export function Canvas({
         return () => window.removeEventListener("resize", handleResize);
     }, []);
 
-    const drawerRef = useRef<{ updateTool: (t: Tool) => void, updateColor: (c: string) => void, cleanup: () => void } | null>(null);
+    const drawerRef = useRef<{ updateTool: (t: Tool) => void, updateColor: (c: string) => void, resetView: () => void, cleanup: () => void } | null>(null);
 
     useEffect(() => {
         if (canvasRef.current && dimensions.width > 0) {
             const setup = async () => {
-                const drawer = await initDraw(canvasRef.current!, roomId, socket, selectedTool, token);
+            const drawer = await initDraw(canvasRef.current!, roomId, socket, selectedTool, token, (scale) => setZoom(scale));
                 if (drawer) {
                     drawerRef.current = drawer;
                     drawer.updateTool(selectedTool);
@@ -55,6 +56,16 @@ export function Canvas({
             drawerRef.current.updateTool(selectedTool);
         }
     }, [selectedTool]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape") {
+                drawerRef.current?.resetView();
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, []);
 
     useEffect(() => {
         if (drawerRef.current) {
@@ -92,6 +103,8 @@ export function Canvas({
                 selectedColor={selectedColor}
                 onColorSelect={(c) => setSelectedColor(c)}
                 onDownload={handleDownload}
+                onResetView={() => drawerRef.current?.resetView()}
+                zoom={zoom}
             />
             <canvas 
                 ref={canvasRef} 
