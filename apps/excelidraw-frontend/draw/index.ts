@@ -24,13 +24,30 @@ type Shape = ({
 
 export type Tool = "rect" | "circle" | "pencil" | "eraser" | "text" | "select";
 
-export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket, initialTool: Tool, token: string) {
+export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket, initialTool: Tool, token: string, onZoomChange?: (scale: number) => void) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     let selectedTool: Tool = initialTool;
     let selectedColor: string = "black";
     const existingShapes: Shape[] = [];
+
+    // Camera state
+    let camera = { x: 0, y: 0, scale: 1 };
+
+    const screenToWorld = (x: number, y: number) => {
+        return {
+            x: (x - camera.x) / camera.scale,
+            y: (y - camera.y) / camera.scale
+        };
+    };
+
+    const worldToScreen = (x: number, y: number) => {
+        return {
+            x: x * camera.scale + camera.x,
+            y: y * camera.scale + camera.y
+        };
+    };
 
     socket.onmessage = (event) => {
         const parsedData = JSON.parse(event.data);
@@ -45,18 +62,17 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
             const newShape = shapeMessage.shape;
             if (!newShape || !newShape.id) return;
 
-            // Prevent duplicates
             if (existingShapes.some(s => s.id === newShape.id)) return;
 
             existingShapes.push(newShape);
-            clearCanvas(existingShapes, canvas, ctx);
+            clearCanvas(existingShapes, canvas, ctx, camera);
         } else if (parsedData.type === "delete_shape") {
             const shapeId = parsedData.shapeId;
             const index = existingShapes.findIndex(s => s.id === shapeId);
             if (index !== -1) {
                 existingShapes.splice(index, 1);
             }
-            clearCanvas(existingShapes, canvas, ctx);
+            clearCanvas(existingShapes, canvas, ctx, camera);
         } else if (parsedData.type === "update_shape") {
             const updatedShape = parsedData.shape;
             const index = existingShapes.findIndex(s => s.id === updatedShape.id);
@@ -65,22 +81,20 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
             } else {
                 existingShapes.push(updatedShape);
             }
-            clearCanvas(existingShapes, canvas, ctx);
+            clearCanvas(existingShapes, canvas, ctx, camera);
         }
     }
 
-    // Fetch history in background
     getExistingShapes(roomId, token).then(history => {
         history.forEach((shape: Shape) => {
             if (!existingShapes.some(s => s.id === shape.id)) {
                 existingShapes.push(shape);
             }
         });
-        clearCanvas(existingShapes, canvas, ctx);
+        clearCanvas(existingShapes, canvas, ctx, camera);
     }).catch(e => {
         console.error("Failed to load history:", e);
     });
-
 
     let clicked = false;
     let startX = 0;
@@ -92,31 +106,48 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
     let dragOffsetY = 0;
 
     const handleMouseDown = (e: MouseEvent) => {
+        if (e.button === 1 || (e.button === 0 && e.altKey)) {
+            return;
+        }
+
         clicked = true;
-        startX = e.offsetX;
-        startY = e.offsetY;
+        const worldPos = screenToWorld(e.offsetX, e.offsetY);
+        startX = worldPos.x;
+        startY = worldPos.y;
 
         if (selectedTool === "select") {
-            selectedShape = findShapeAt(e.offsetX, e.offsetY);
+            selectedShape = findShapeAt(worldPos.x, worldPos.y, existingShapes, ctx);
             if (selectedShape) {
                 if (selectedShape.type === "rect") {
-                    dragOffsetX = e.offsetX - selectedShape.x;
-                    dragOffsetY = e.offsetY - selectedShape.y;
+                    dragOffsetX = worldPos.x - selectedShape.x;
+                    dragOffsetY = worldPos.y - selectedShape.y;
                 } else if (selectedShape.type === "circle") {
-                    dragOffsetX = e.offsetX - selectedShape.centerX;
-                    dragOffsetY = e.offsetY - selectedShape.centerY;
+                    dragOffsetX = worldPos.x - selectedShape.centerX;
+                    dragOffsetY = worldPos.y - selectedShape.centerY;
                 } else if (selectedShape.type === "text") {
-                    dragOffsetX = e.offsetX - selectedShape.x;
-                    dragOffsetY = e.offsetY - selectedShape.y;
+                    dragOffsetX = worldPos.x - selectedShape.x;
+                    dragOffsetY = worldPos.y - selectedShape.y;
                 } else if (selectedShape.type === "pencil") {
-                    dragOffsetX = e.offsetX;
-                    dragOffsetY = e.offsetY;
+                    dragOffsetX = worldPos.x;
+                    dragOffsetY = worldPos.y;
                 }
             }
         } else if (selectedTool === "pencil") {
-            currentPath = [{ x: startX, y: startY }];
+            currentPath = [{ x: worldPos.x, y: worldPos.y }];
         } else if (selectedTool === "eraser") {
-            eraseAt(e.offsetX, e.offsetY);
+            const shapeToErace = findShapeAt(worldPos.x, worldPos.y, existingShapes, ctx);
+            if (shapeToErace) {
+                const index = existingShapes.findIndex(s => s.id === shapeToErace.id);
+                if (index !== -1) {
+                    existingShapes.splice(index, 1);
+                }
+                socket.send(JSON.stringify({
+                    type: "delete_shape",
+                    shapeId: shapeToErace.id,
+                    roomId
+                }));
+                clearCanvas(existingShapes, canvas, ctx, camera);
+            }
         } else if (selectedTool === "text") {
             clicked = false;
             const input = document.createElement("textarea");
@@ -151,8 +182,8 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                         type: "text",
                         id: Math.random().toString(36).substring(2, 9),
                         text,
-                        x: e.offsetX,
-                        y: e.offsetY,
+                        x: worldPos.x,
+                        y: worldPos.y,
                         color: selectedColor
                     };
                     existingShapes.push(newShape);
@@ -161,7 +192,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                         message: JSON.stringify({ shape: newShape }),
                         roomId
                     }));
-                    clearCanvas(existingShapes, canvas, ctx);
+                    clearCanvas(existingShapes, canvas, ctx, camera);
                 }
                 document.body.removeChild(input);
             };
@@ -179,8 +210,9 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
         if (!clicked) return;
         clicked = false;
         let shape: Shape | null = null;
-        const width = e.offsetX - startX;
-        const height = e.offsetY - startY;
+        const worldPos = screenToWorld(e.offsetX, e.offsetY);
+        const width = worldPos.x - startX;
+        const height = worldPos.y - startY;
 
         if (selectedTool === "rect") {
             shape = {
@@ -227,15 +259,25 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                 message: JSON.stringify({ shape }),
                 roomId
             }));
-            clearCanvas(existingShapes, canvas, ctx);
+            clearCanvas(existingShapes, canvas, ctx, camera);
         }
     };
 
     const handleMouseMove = (e: MouseEvent) => {
+        if (e.buttons === 4 || (e.buttons === 1 && e.altKey)) {
+            camera.x += e.movementX;
+            camera.y += e.movementY;
+            clearCanvas(existingShapes, canvas, ctx, camera);
+            return;
+        }
+
         if (clicked) {
-            const width = e.offsetX - startX;
-            const height = e.offsetY - startY;
-            clearCanvas(existingShapes, canvas, ctx);
+            const worldPos = screenToWorld(e.offsetX, e.offsetY);
+            const width = worldPos.x - startX;
+            const height = worldPos.y - startY;
+
+            clearCanvas(existingShapes, canvas, ctx, camera);
+
             ctx.strokeStyle = selectedColor;
             ctx.lineWidth = 2;
 
@@ -247,103 +289,71 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                 ctx.arc(startX, startY, radius, 0, 2 * Math.PI);
                 ctx.stroke();
             } else if (selectedTool === "pencil") {
-                currentPath.push({ x: e.offsetX, y: e.offsetY });
+                currentPath.push({ x: worldPos.x, y: worldPos.y });
                 ctx.beginPath();
-                ctx.moveTo(currentPath[0].x, currentPath[0].y);
+                ctx.moveTo(startX, startY);
                 for (let i = 1; i < currentPath.length; i++) {
                     ctx.lineTo(currentPath[i].x, currentPath[i].y);
                 }
                 ctx.stroke();
             } else if (selectedTool === "eraser") {
-                eraseAt(e.offsetX, e.offsetY);
+                const shapeToErace = findShapeAt(worldPos.x, worldPos.y, existingShapes, ctx);
+                if (shapeToErace) {
+                    const index = existingShapes.findIndex(s => s.id === shapeToErace.id);
+                    if (index !== -1) {
+                        existingShapes.splice(index, 1);
+                    }
+                    socket.send(JSON.stringify({
+                        type: "delete_shape",
+                        shapeId: shapeToErace.id,
+                        roomId
+                    }));
+                    clearCanvas(existingShapes, canvas, ctx, camera);
+                }
             } else if (selectedTool === "select" && selectedShape) {
                 if (selectedShape.type === "rect") {
-                    selectedShape.x = e.offsetX - dragOffsetX;
-                    selectedShape.y = e.offsetY - dragOffsetY;
+                    selectedShape.x = worldPos.x - dragOffsetX;
+                    selectedShape.y = worldPos.y - dragOffsetY;
                 } else if (selectedShape.type === "circle") {
-                    selectedShape.centerX = e.offsetX - dragOffsetX;
-                    selectedShape.centerY = e.offsetY - dragOffsetY;
+                    selectedShape.centerX = worldPos.x - dragOffsetX;
+                    selectedShape.centerY = worldPos.y - dragOffsetY;
                 } else if (selectedShape.type === "text") {
-                    selectedShape.x = e.offsetX - dragOffsetX;
-                    selectedShape.y = e.offsetY - dragOffsetY;
+                    selectedShape.x = worldPos.x - dragOffsetX;
+                    selectedShape.y = worldPos.y - dragOffsetY;
                 } else if (selectedShape.type === "pencil") {
-                    const diffX = e.offsetX - dragOffsetX;
-                    const diffY = e.offsetY - dragOffsetY;
+                    const diffX = worldPos.x - dragOffsetX;
+                    const diffY = worldPos.y - dragOffsetY;
                     selectedShape.points = selectedShape.points.map(p => ({
                         x: p.x + diffX,
                         y: p.y + diffY
                     }));
-                    dragOffsetX = e.offsetX;
-                    dragOffsetY = e.offsetY;
+                    dragOffsetX = worldPos.x;
+                    dragOffsetY = worldPos.y;
                 }
-                clearCanvas(existingShapes, canvas, ctx);
+                clearCanvas(existingShapes, canvas, ctx, camera);
             }
         }
     };
 
-    const findShapeAt = (x: number, y: number): Shape | null => {
-        const threshold = 10;
-        for (let i = existingShapes.length - 1; i >= 0; i--) {
-            const shape = existingShapes[i];
-            if (shape.type === "rect") {
-                const minX = Math.min(shape.x, shape.x + shape.width);
-                const maxX = Math.max(shape.x, shape.x + shape.width);
-                const minY = Math.min(shape.y, shape.y + shape.height);
-                const maxY = Math.max(shape.y, shape.y + shape.height);
-                if (x >= minX - threshold && x <= maxX + threshold && y >= minY - threshold && y <= maxY + threshold) return shape;
-            } else if (shape.type === "circle") {
-                const dist = Math.sqrt(Math.pow(x - shape.centerX, 2) + Math.pow(y - shape.centerY, 2));
-                if (Math.abs(dist - shape.radius) < threshold || dist < shape.radius) return shape;
-            } else if (shape.type === "pencil") {
-                if (shape.points.some(p => Math.sqrt(Math.pow(x - p.x, 2) + Math.pow(y - p.y, 2)) < threshold)) return shape;
-            } else if (shape.type === "text") {
-                const width = ctx.measureText(shape.text).width;
-                const height = 20;
-                if (x >= shape.x && x <= shape.x + width && y >= shape.y - height && y <= shape.y) return shape;
-            }
-        }
-        return null;
-    };
+    const handleWheel = (e: WheelEvent) => {
+        e.preventDefault();
+        const zoomSpeed = 0.001;
+        const delta = -e.deltaY;
+        const newScale = Math.min(Math.max(camera.scale + delta * zoomSpeed * camera.scale, 0.1), 10);
 
-    const eraseAt = (x: number, y: number) => {
-        const threshold = 10;
-        const shapeToErace = existingShapes.find(shape => {
-            if (shape.type === "rect") {
-                const minX = Math.min(shape.x, shape.x + shape.width);
-                const maxX = Math.max(shape.x, shape.x + shape.width);
-                const minY = Math.min(shape.y, shape.y + shape.height);
-                const maxY = Math.max(shape.y, shape.y + shape.height);
-                return x >= minX - threshold && x <= maxX + threshold && y >= minY - threshold && y <= maxY + threshold;
-            } else if (shape.type === "circle") {
-                const dist = Math.sqrt(Math.pow(x - shape.centerX, 2) + Math.pow(y - shape.centerY, 2));
-                return Math.abs(dist - shape.radius) < threshold || dist < shape.radius;
-            } else if (shape.type === "pencil") {
-                return shape.points.some(p => Math.sqrt(Math.pow(x - p.x, 2) + Math.pow(y - p.y, 2)) < threshold);
-            } else if (shape.type === "text") {
-                const width = ctx.measureText(shape.text).width;
-                const height = 20;
-                return x >= shape.x && x <= shape.x + width && y >= shape.y - height && y <= shape.y;
-            }
-            return false;
-        });
+        const worldPos = screenToWorld(e.offsetX, e.offsetY);
+        camera.scale = newScale;
+        camera.x = e.offsetX - worldPos.x * camera.scale;
+        camera.y = e.offsetY - worldPos.y * camera.scale;
 
-        if (shapeToErace) {
-            const index = existingShapes.findIndex(s => s.id === shapeToErace.id);
-            if (index !== -1) {
-                existingShapes.splice(index, 1);
-            }
-            socket.send(JSON.stringify({
-                type: "delete_shape",
-                shapeId: shapeToErace.id,
-                roomId
-            }));
-            clearCanvas(existingShapes, canvas, ctx);
-        }
+        onZoomChange?.(camera.scale);
+        clearCanvas(existingShapes, canvas, ctx, camera);
     };
 
     canvas.addEventListener('mousedown', handleMouseDown);
     canvas.addEventListener('mouseup', handleMouseUp);
     canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('wheel', handleWheel, { passive: false });
 
     return {
         updateTool: (newTool: Tool) => {
@@ -352,18 +362,51 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
         updateColor: (newColor: string) => {
             selectedColor = newColor;
         },
+        resetView: () => {
+            camera = { x: 0, y: 0, scale: 1 };
+            onZoomChange?.(camera.scale);
+            clearCanvas(existingShapes, canvas, ctx, camera);
+        },
         cleanup: () => {
             canvas.removeEventListener('mousedown', handleMouseDown);
             canvas.removeEventListener('mouseup', handleMouseUp);
             canvas.removeEventListener('mousemove', handleMouseMove);
+            canvas.removeEventListener('wheel', handleWheel);
         }
     };
 }
 
-function clearCanvas(existingShapes: Shape[], canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
+function findShapeAt(x: number, y: number, existingShapes: Shape[], ctx: CanvasRenderingContext2D): Shape | null {
+    const threshold = 10;
+    for (let i = existingShapes.length - 1; i >= 0; i--) {
+        const shape = existingShapes[i];
+        if (shape.type === "rect") {
+            const minX = Math.min(shape.x, shape.x + shape.width);
+            const maxX = Math.max(shape.x, shape.x + shape.width);
+            const minY = Math.min(shape.y, shape.y + shape.height);
+            const maxY = Math.max(shape.y, shape.y + shape.height);
+            if (x >= minX - threshold && x <= maxX + threshold && y >= minY - threshold && y <= maxY + threshold) return shape;
+        } else if (shape.type === "circle") {
+            const dist = Math.sqrt(Math.pow(x - shape.centerX, 2) + Math.pow(y - shape.centerY, 2));
+            if (Math.abs(dist - shape.radius) < threshold || dist < shape.radius) return shape;
+        } else if (shape.type === "pencil") {
+            if (shape.points.some(p => Math.sqrt(Math.pow(x - p.x, 2) + Math.pow(y - p.y, 2)) < threshold)) return shape;
+        } else if (shape.type === "text") {
+            const width = ctx.measureText(shape.text).width;
+            const height = 20;
+            if (x >= shape.x && x <= shape.x + width && y >= shape.y - height && y <= shape.y) return shape;
+        }
+    }
+    return null;
+}
+
+function clearCanvas(existingShapes: Shape[], canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, camera: { x: number, y: number, scale: number }) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "white";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.setTransform(camera.scale, 0, 0, camera.scale, camera.x, camera.y);
 
     existingShapes.forEach((shape) => {
         ctx.strokeStyle = shape.color || "black";

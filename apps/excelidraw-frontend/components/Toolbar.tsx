@@ -3,12 +3,14 @@ import { useState } from "react";
 
 export type Tool = "rect" | "circle" | "pencil" | "eraser" | "text" | "select";
 
-export function Toolbar({ selectedTool, onSelect, selectedColor, onColorSelect, onDownload }: { 
+export function Toolbar({ selectedTool, onSelect, selectedColor, onColorSelect, onDownload, onResetView, zoom }: { 
     selectedTool: Tool, 
     onSelect: (tool: Tool) => void,
     selectedColor: string,
     onColorSelect: (color: string) => void,
-    onDownload: (format: "png" | "pdf") => void
+    onDownload: (format: "png" | "pdf") => void,
+    onResetView: () => void,
+    zoom: number
 }) {
     const [downloadOpen, setDownloadOpen] = useState(false);
     const [copied, setCopied] = useState(false);
@@ -88,6 +90,18 @@ export function Toolbar({ selectedTool, onSelect, selectedColor, onColorSelect, 
                 ))}
             </div>
             
+            <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-gray-50 text-gray-500 text-xs font-mono border border-gray-100">
+                <span>{Math.round(zoom * 100)}%</span>
+            </div>
+
+            <button 
+                onClick={onResetView}
+                className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                title="Reset View (Esc)"
+            >
+                <span>Reset View</span>
+            </button>
+
             <button 
                 onClick={shareCanvas}
                 className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition-colors shadow-sm"
