@@ -9,27 +9,61 @@ import {
   Sparkles,
   ArrowRight
 } from 'lucide-react';
-import { useRouter } from 'next/Navigation';
+import { useRouter } from 'next/navigation';
+import { 
+  SignedIn, 
+  SignedOut, 
+  UserButton,
+  useAuth
+} from '@clerk/nextjs';
+import axios from 'axios';
+import { HTTP_BACKEND } from '@/config';
 
 function App() {
   const router = useRouter();
+  const { getToken } = useAuth();
+
+  const handleCreateRoom = async () => {
+    try {
+      const token = await getToken();
+      const res = await axios.post(`${HTTP_BACKEND}/room`, {
+        name: `room-${Math.floor(Math.random() * 10000)}`
+      }, {
+        headers: {
+          Authorization: token
+        }
+      });
+      router.push(`/canvas/${res.data.roomId}`);
+    } catch (e) {
+      console.error("Failed to create room", e);
+      // Fallback to random ID if API fails (backend hardening will handle it)
+      const roomId = Math.floor(Math.random() * 10000);
+      router.push(`/canvas/${roomId}`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}
       <nav className="fixed w-full bg-white/80 backdrop-blur-sm z-50 border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <Shapes className="w-8 h-8 text-indigo-600" />
+            <div className="flex items-center space-x-2 text-indigo-600">
+              <Shapes className="w-8 h-8" />
               <span className="text-xl font-bold text-gray-900">DrawFlow</span>
             </div>
             <div className="hidden md:flex items-center space-x-8">
               <a href="#features" className="text-gray-600 hover:text-gray-900">Features</a>
               <a href="#" className="text-gray-600 hover:text-gray-900">Templates</a>
               <a href="#" className="text-gray-600 hover:text-gray-900">Pricing</a>
-              <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
-                Try Now
-              </button>
+              <SignedOut>
+                <button onClick={() => router.push('/signin')} className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors cursor-pointer font-medium">
+                  Sign In
+                </button>
+              </SignedOut>
+              <SignedIn>
+                <UserButton afterSignOutUrl="/" />
+              </SignedIn>
             </div>
           </div>
         </div>
@@ -39,7 +73,7 @@ function App() {
       <div className="pt-24 pb-16 sm:pt-32 relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h1 className="text-4xl sm:text-6xl font-bold text-gray-900 mb-6">
+            <h1 className="text-4xl sm:text-6xl font-bold text-gray-900 mb-6 tracking-tight">
               Whiteboarding,{' '}
               <span className="text-indigo-600">Reimagined</span>
             </h1>
@@ -48,16 +82,18 @@ function App() {
               Collaborate in real-time with your team.
             </p>
             <div className="flex justify-center space-x-4">
-              <button onClick={() => {
-                router.push('/signup');
-              }} className="bg-indigo-600 text-white px-8 py-3 rounded-lg hover:bg-indigo-700 transition-colors flex items-center">  
-                Sign Up <ArrowRight className="ml-2 w-5 h-5" />
-              </button>
-              <button onClick={()=> {
-                router.push('/signin');
-              }} className="border border-gray-300 text-gray-700 px-8 py-3 rounded-lg hover:bg-gray-50 transition-colors">
-                Sign In
-              </button>
+              <SignedOut>
+                <button onClick={() => {
+                  router.push('/signup');
+                }} className="bg-indigo-600 text-white px-8 py-3 rounded-lg hover:bg-indigo-700 transition-all transform hover:scale-105 shadow-lg flex items-center cursor-pointer font-semibold">  
+                  Get Started Free <ArrowRight className="ml-2 w-5 h-5" />
+                </button>
+              </SignedOut>
+              <SignedIn>
+                <button onClick={handleCreateRoom} className="bg-indigo-600 text-white px-8 py-3 rounded-lg hover:bg-indigo-700 transition-all transform hover:scale-105 shadow-lg flex items-center cursor-pointer font-semibold">  
+                  Create New Canvas <ArrowRight className="ml-2 w-5 h-5" />
+                </button>
+              </SignedIn>
             </div>
           </div>
           <div className="mt-12 relative">
@@ -133,9 +169,21 @@ function App() {
           <p className="text-indigo-100 mb-8 text-lg">
             Join thousands of teams who trust DrawFlow for their visual collaboration needs.
           </p>
-          <button className="bg-white text-indigo-600 px-8 py-3 rounded-lg hover:bg-indigo-50 transition-colors font-semibold">
-            Get Started Free
-          </button>
+          <SignedOut>
+            <button onClick={() => {
+              router.push('/signup');
+            }} className="bg-white text-indigo-600 px-8 py-3 rounded-lg hover:bg-indigo-50 transition-colors font-semibold cursor-pointer">
+              Get Started Free
+            </button>
+          </SignedOut>
+          <SignedIn>
+            <button onClick={() => {
+              const roomId = Math.floor(Math.random() * 10000);
+              router.push(`/canvas/${roomId}`);
+            }} className="bg-white text-indigo-600 px-8 py-3 rounded-lg hover:bg-indigo-50 transition-colors font-semibold cursor-pointer">
+              Open My Canvas
+            </button>
+          </SignedIn>
         </div>
       </div>
 
