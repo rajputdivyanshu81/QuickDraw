@@ -15,6 +15,7 @@ model User {
   photo     String?
   rooms     Room[]
   chats     Chat[]
+  roomMessages RoomMessage[]
 }
 
 model Room {
@@ -24,7 +25,9 @@ model Room {
   adminId   String
   admin     User     @relation(fields: [adminId], references: [id])
   chats     Chat[]
+  roomMessages RoomMessage[]
 }
+
 
 model Chat {
   id        Int      @id @default(autoincrement())
@@ -33,4 +36,14 @@ model Chat {
   userId    String
   room      Room     @relation(fields: [roomId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
+}
+
+model RoomMessage {
+    id        Int      @id @default(autoincrement())
+    roomId    Int
+    message   String
+    userId    String
+    createdAt DateTime @default(now())
+    room      Room     @relation(fields: [roomId], references: [id])
+    user      User     @relation(fields: [userId], references: [id])
 }

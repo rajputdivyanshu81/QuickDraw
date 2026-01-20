@@ -553,6 +553,7 @@ function clearCanvas(existingShapes: Shape[], canvas: HTMLCanvasElement, ctx: Ca
 
 async function getExistingShapes(roomId: string, token: string) {
     try {
+        console.log("Fetching existing shapes with token:", token ? token.substring(0, 20) + "..." : "EMPTY");
         const res = await axios.get(`${HTTP_BACKEND}/chats/${roomId}`, {
             headers: {
                 "Authorization": token
@@ -570,10 +571,6 @@ async function getExistingShapes(roomId: string, token: string) {
         return shapes;
     } catch (e: any) {
         console.error("Failed to fetch existing shapes", e);
-        if (e.response) {
-            console.error("Error response data:", e.response.data);
-            console.error("Error status:", e.response.status);
-        }
         return [];
     }
 }
