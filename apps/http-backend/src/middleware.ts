@@ -45,9 +45,10 @@ export async function middleware(req: CustomRequest, res: Response, next: NextFu
         req.userId = decoded.sub;
         next();
     } catch (err: any) {
-        console.error("Auth error:", err.message || err);
+        console.error("Auth error:", err);
         res.status(403).json({
-            message: "Unauthorized - " + (err.message || "Unknown error")
+            message: "Unauthorized - " + (err.message || "Unknown error"),
+            detail: err.toString()
         });
     }
 }

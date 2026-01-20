@@ -1,7 +1,10 @@
 import {useEffect, useRef, useState} from "react";
 import { initDraw } from "@/draw";
 import { Toolbar, Tool } from "./Toolbar";
+import { Sidebar } from "./Sidebar";
 import jsPDF from "jspdf";
+
+import { Undo, Redo } from "lucide-react";
 
 export function Canvas({
     roomId,
@@ -28,16 +31,35 @@ export function Canvas({
         return () => window.removeEventListener("resize", handleResize);
     }, []);
 
-    const drawerRef = useRef<{ updateTool: (t: Tool) => void, updateColor: (c: string) => void, resetView: () => void, cleanup: () => void } | null>(null);
+    const [backgroundColor, setBackgroundColor] = useState<string>("#ffffff");
+
+    const drawerRef = useRef<{ 
+        updateTool: (t: Tool) => void, 
+        updateColor: (c: string) => void, 
+        updateBackgroundColor: (c: string) => void,
+        resetView: () => void, 
+        undo: () => void,
+        redo: () => void,
+        cleanup: () => void 
+    } | null>(null);
 
     useEffect(() => {
         if (canvasRef.current && dimensions.width > 0) {
             const setup = async () => {
-            const drawer = await initDraw(canvasRef.current!, roomId, socket, selectedTool, token, (scale) => setZoom(scale));
+            const drawer = await initDraw(
+                canvasRef.current!, 
+                roomId, 
+                socket, 
+                selectedTool, 
+                token, 
+                (scale) => setZoom(scale),
+                backgroundColor
+            );
                 if (drawer) {
                     drawerRef.current = drawer;
                     drawer.updateTool(selectedTool);
                     drawer.updateColor(selectedColor);
+                    drawer.updateBackgroundColor(backgroundColor);
                 }
             };
             setup();
@@ -61,6 +83,16 @@ export function Canvas({
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === "Escape") {
                 drawerRef.current?.resetView();
+            } else if ((e.ctrlKey || e.metaKey) && e.key === "z") {
+                if (e.shiftKey) {
+                    drawerRef.current?.redo();
+                } else {
+                    drawerRef.current?.undo();
+                }
+                e.preventDefault();
+            } else if ((e.ctrlKey || e.metaKey) && e.key === "y") {
+                drawerRef.current?.redo();
+                e.preventDefault();
             }
         };
         window.addEventListener("keydown", handleKeyDown);
@@ -72,6 +104,12 @@ export function Canvas({
             drawerRef.current.updateColor(selectedColor);
         }
     }, [selectedColor]);
+
+    useEffect(() => {
+        if (drawerRef.current) {
+            drawerRef.current.updateBackgroundColor(backgroundColor);
+        }
+    }, [backgroundColor]);
 
     const handleDownload = (format: "png" | "pdf") => {
         const canvas = canvasRef.current;
@@ -106,6 +144,29 @@ export function Canvas({
                 onResetView={() => drawerRef.current?.resetView()}
                 zoom={zoom}
             />
+            <Sidebar 
+                selectedBgColor={backgroundColor} 
+                onBgColorSelect={setBackgroundColor} 
+            />
+            
+            {/* Undo/Redo Controls */}
+            <div className="absolute top-4 right-4 flex gap-2 z-10 bg-white p-2 rounded-lg shadow-md border border-gray-200">
+                <button 
+                    onClick={() => drawerRef.current?.undo()}
+                    className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+                    title="Undo (Ctrl+Z)"
+                >
+                    <Undo className="w-5 h-5 text-gray-700" />
+                </button>
+                <button 
+                    onClick={() => drawerRef.current?.redo()}
+                    className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+                    title="Redo (Ctrl+Y)"
+                >
+                    <Redo className="w-5 h-5 text-gray-700" />
+                </button>
+            </div>
+
             <canvas 
                 ref={canvasRef} 
                 width={dimensions.width} 
