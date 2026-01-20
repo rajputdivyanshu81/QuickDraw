@@ -20,7 +20,7 @@ type Shape = ({
     text: string;
     x: number;
     y: number;
-}) & { id: string };
+}) & { id: string; color?: string };
 
 export type Tool = "rect" | "circle" | "pencil" | "eraser" | "text" | "select";
 
@@ -29,6 +29,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
     if (!ctx) return;
 
     let selectedTool: Tool = initialTool;
+    let selectedColor: string = "black";
     const existingShapes: Shape[] = [];
 
     socket.onmessage = (event) => {
@@ -151,7 +152,8 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                         id: Math.random().toString(36).substring(2, 9),
                         text,
                         x: e.offsetX,
-                        y: e.offsetY
+                        y: e.offsetY,
+                        color: selectedColor
                     };
                     existingShapes.push(newShape);
                     socket.send(JSON.stringify({
@@ -188,6 +190,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                 y: startY,
                 width: width,
                 height: height,
+                color: selectedColor
             };
         } else if (selectedTool === "circle") {
             const radius = Math.sqrt(width * width + height * height);
@@ -197,12 +200,14 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                 centerX: startX,
                 centerY: startY,
                 radius: radius,
+                color: selectedColor
             };
         } else if (selectedTool === "pencil") {
             shape = {
                 type: "pencil",
                 id: Math.random().toString(36).substring(2, 9),
                 points: currentPath,
+                color: selectedColor
             };
         }
 
@@ -231,7 +236,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
             const width = e.offsetX - startX;
             const height = e.offsetY - startY;
             clearCanvas(existingShapes, canvas, ctx);
-            ctx.strokeStyle = "black";
+            ctx.strokeStyle = selectedColor;
             ctx.lineWidth = 2;
 
             if (selectedTool === "rect") {
@@ -344,6 +349,9 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
         updateTool: (newTool: Tool) => {
             selectedTool = newTool;
         },
+        updateColor: (newColor: string) => {
+            selectedColor = newColor;
+        },
         cleanup: () => {
             canvas.removeEventListener('mousedown', handleMouseDown);
             canvas.removeEventListener('mouseup', handleMouseUp);
@@ -358,7 +366,7 @@ function clearCanvas(existingShapes: Shape[], canvas: HTMLCanvasElement, ctx: Ca
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     existingShapes.forEach((shape) => {
-        ctx.strokeStyle = "black";
+        ctx.strokeStyle = shape.color || "black";
         ctx.lineWidth = 2;
         if (shape.type === "rect") {
             ctx.strokeRect(shape.x, shape.y, shape.width, shape.height);
@@ -376,7 +384,7 @@ function clearCanvas(existingShapes: Shape[], canvas: HTMLCanvasElement, ctx: Ca
             ctx.stroke();
         } else if (shape.type === "text") {
             ctx.font = "20px Arial";
-            ctx.fillStyle = "black";
+            ctx.fillStyle = shape.color || "black";
             ctx.fillText(shape.text, shape.x, shape.y);
         }
     });

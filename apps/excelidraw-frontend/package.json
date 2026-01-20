@@ -12,6 +12,7 @@
     "@clerk/nextjs": "^6.36.8",
     "@repo/ui": "workspace:*",
     "axios": "^1.7.9",
+    "jspdf": "^4.0.0",
     "lucide-react": "^0.475.0",
     "next": "15.1.6",
     "react": "^19.0.0",
