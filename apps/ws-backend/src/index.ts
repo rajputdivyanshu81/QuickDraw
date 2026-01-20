@@ -11,22 +11,30 @@ console.log("DATABASE_URL present:", !!process.env.DATABASE_URL);
 interface User {
   ws: WebSocket,
   rooms: string[],
-  userId: string
+  userId: string,
+  name: string
 }
 
 const users: User[] = [];
 
 async function checkUser(token: string): Promise<{ userId: string, email: string, name: string } | null> {
+  const secretKey = process.env.CLERK_SECRET_KEY;
+  if (!secretKey) {
+    console.error("CRITICAL: CLERK_SECRET_KEY is missing in backend env!");
+  }
+
   try {
     const decoded = await verifyToken(token, {
-      secretKey: process.env.CLERK_SECRET_KEY,
+      secretKey: secretKey,
     });
     return {
       userId: decoded.sub,
       email: (decoded as any).email || (decoded as any).email_address || `${decoded.sub}@clerk.com`,
       name: (decoded as any).name || (decoded as any).first_name || "User"
     };
-  } catch (e) {
+  } catch (e: any) {
+    console.error("WS Auth Failed:", e.message || e);
+    // console.log("Token start:", token.substring(0, 10) + "..."); // Optional debug
     return null;
   }
 }
@@ -77,7 +85,8 @@ wss.on('connection', async function connection(ws, request) {
     users.push({
       userId,
       rooms: [],
-      ws
+      ws,
+      name: userData.name
     });
 
     // 3. Process queued messages
@@ -273,6 +282,59 @@ wss.on('connection', async function connection(ws, request) {
             }))
           }
         })
+      }
+    }
+    if (parsedData.type === "group_message") {
+      const roomIdStr = parsedData.roomId;
+      const message = parsedData.message;
+      console.log(`Processing group_message for room ${roomIdStr}: ${message}`);
+
+      const roomId = await resolveRoomId(roomIdStr, true);
+      console.log(`Resolved roomId: ${roomId}`);
+
+      if (roomId) {
+        try {
+          // Ensure roomMessage is defined in PrismaClient (after restart)
+          console.log("Checking prismaClient.roomMessage...");
+          if (!prismaClient.roomMessage) {
+            console.error("CRITICAL: prismaClient.roomMessage is undefined! Please restart the backend.");
+            return;
+          }
+
+          console.log("Saving message to DB...");
+          const savedMessage = await prismaClient.roomMessage.create({
+            data: {
+              roomId,
+              message,
+              userId
+            }
+          });
+          console.log("Message saved to DB:", savedMessage.id);
+
+          // Find sender's name
+          const sender = users.find(u => u.userId === userId);
+          const senderName = sender ? sender.name : "Unknown User";
+
+          let broadcastCount = 0;
+          users.forEach(user => {
+            if (user.rooms.includes(roomIdStr.toString())) {
+              user.ws.send(JSON.stringify({
+                type: "group_message",
+                message: message,
+                userId: userId,
+                name: senderName,
+                id: savedMessage.id,
+                roomId: roomIdStr
+              }));
+              broadcastCount++;
+            }
+          });
+          console.log(`Broadcasted to ${broadcastCount} users`);
+        } catch (e) {
+          console.error("Group message creation failed:", e);
+        }
+      } else {
+        console.error("Could not resolve roomId for group_message:", roomIdStr);
       }
     }
   }

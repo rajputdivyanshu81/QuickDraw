@@ -9,7 +9,14 @@ interface CustomRequest extends Request {
 export async function middleware(req: CustomRequest, res: Response, next: NextFunction) {
     const token = req.headers["authorization"] ?? "";
 
+    if (!process.env.CLERK_SECRET_KEY) {
+        console.error("CRITICAL ERROR: CLERK_SECRET_KEY is missing in http-backend environment variables!");
+        res.status(500).json({ message: "Internal Server Error: Missing Auth Config" });
+        return;
+    }
+
     try {
+        console.log("Middleware verifying token:", token.substring(0, 10) + "...");
         const decoded = await verifyToken(token, {
             secretKey: process.env.CLERK_SECRET_KEY,
         });
@@ -45,9 +52,9 @@ export async function middleware(req: CustomRequest, res: Response, next: NextFu
         req.userId = decoded.sub;
         next();
     } catch (err: any) {
-        console.error("Auth error:", err.message || err);
+        console.error("Auth error:", err);
         res.status(403).json({
-            message: "Unauthorized - " + (err.message || "Unknown error")
+            message: "Unauthorized"
         });
     }
 }

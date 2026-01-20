@@ -1,7 +1,7 @@
-import { Pencil, Square, Circle, Eraser, Type, MousePointer2, Share2, Check, Download, Image as ImageIcon, FileText } from "lucide-react";
+import { Pencil, Square, Circle, Eraser, Type, MousePointer2, Share2, Check, Download, Image as ImageIcon, FileText, Minus } from "lucide-react";
 import { useState } from "react";
 
-export type Tool = "rect" | "circle" | "pencil" | "eraser" | "text" | "select";
+export type Tool = "rect" | "circle" | "pencil" | "eraser" | "text" | "select" | "line";
 
 export function Toolbar({ selectedTool, onSelect, selectedColor, onColorSelect, onDownload, onResetView, zoom }: { 
     selectedTool: Tool, 
@@ -41,6 +41,13 @@ export function Toolbar({ selectedTool, onSelect, selectedColor, onColorSelect, 
                     title="Pencil (P)"
                 >
                     <Pencil className="w-5 h-5" />
+                </button>
+                <button 
+                    onClick={() => onSelect("line")}
+                    className={`p-2 rounded-full hover:bg-gray-100 transition-colors ${selectedTool === "line" ? "bg-indigo-100 text-indigo-600" : "text-gray-600"}`}
+                    title="Line (L)"
+                >
+                    <Minus className="w-5 h-5" />
                 </button>
                 <button 
                     onClick={() => onSelect("rect")}
