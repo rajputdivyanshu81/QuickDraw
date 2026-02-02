@@ -35,7 +35,17 @@ type Shape = ({
     height: number;
 }) & { id: string; color?: string };
 
-export type Tool = "rect" | "circle" | "pencil" | "eraser" | "text" | "select" | "line" | "pan" | "ppt-capture";
+export type Tool = "rect" | "circle" | "pencil" | "eraser" | "text" | "select" | "line" | "pan" | "ppt-capture" | "laser";
+
+type LaserPointerData = {
+    points: { x: number, y: number, timestamp: number }[],
+    name: string,
+    lastUpdate: number
+};
+
+const isTextShape = (shape: Shape): shape is Extract<Shape, { type: "text" }> => {
+    return shape.type === "text";
+};
 
 export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket, initialTool: Tool, token: string, onZoomChange?: (scale: number) => void, initialBackgroundColor: string = "#ffffff", onCapture?: (image: string) => void) {
     const ctx = canvas.getContext("2d");
@@ -46,7 +56,23 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
     let selectedTool: Tool = initialTool;
     let selectedColor: string = "black";
     let backgroundColor: string = initialBackgroundColor;
+
+    // Identity for local laser/interactions
+    let myUserId = "anon";
+    let myUserName = "User";
+    try {
+        const parts = token.split('.');
+        if (parts.length >= 2) {
+            const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+            myUserId = (payload.sub || payload.userId || "anon").toString();
+            myUserName = (payload.name || payload.first_name || "User").toString();
+        }
+    } catch (e) {
+        console.warn("Could not decode token for identity", e);
+    }
+
     const existingShapes: Shape[] = [];
+    const laserPointers = new Map<string, LaserPointerData>();
 
     // Camera state
     const camera = { x: 0, y: 0, scale: 1 };
@@ -81,14 +107,14 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
             if (existingShapes.some(s => s.id === newShape.id)) return;
 
             existingShapes.push(newShape);
-            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape);
+            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
         } else if (parsedData.type === "delete_shape") {
             const shapeId = parsedData.shapeId;
             const index = existingShapes.findIndex(s => s.id === shapeId);
             if (index !== -1) {
                 existingShapes.splice(index, 1);
             }
-            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape);
+            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
         } else if (parsedData.type === "update_shape") {
             const updatedShape = parsedData.shape;
             const index = existingShapes.findIndex(s => s.id === updatedShape.id);
@@ -97,7 +123,25 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
             } else {
                 existingShapes.push(updatedShape);
             }
-            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape);
+            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
+        } else if (parsedData.type === "laser_pointer") {
+            const userId = parsedData.userId;
+            const existing = laserPointers.get(userId);
+            const newPoint = { x: parsedData.x, y: parsedData.y, timestamp: Date.now() };
+
+            if (existing) {
+                existing.points.push(newPoint);
+                if (existing.points.length > 20) existing.points.shift();
+                existing.lastUpdate = Date.now();
+                existing.name = parsedData.name || existing.name;
+            } else {
+                laserPointers.set(userId, {
+                    points: [newPoint],
+                    name: parsedData.name || "User",
+                    lastUpdate: Date.now()
+                });
+            }
+            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
         }
     }
 
@@ -107,7 +151,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                 existingShapes.push(shape);
             }
         });
-        clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape);
+        clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
     }).catch((e: any) => {
         console.error("Failed to fetch existing shapes", e);
         if (e.response) {
@@ -115,6 +159,21 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
             console.error("Error status:", e.response.status);
         }
     });
+
+    // Cleanup old laser pointers every 100ms
+    const laserCleanupInterval = setInterval(() => {
+        let changed = false;
+        const now = Date.now();
+        for (const [userId, data] of laserPointers.entries()) {
+            if (now - data.lastUpdate > 1500) {
+                laserPointers.delete(userId);
+                changed = true;
+            }
+        }
+        if (changed || laserPointers.size > 0) {
+            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
+        }
+    }, 50);
 
     // History for Undo/Redo
     type Operation =
@@ -237,64 +296,120 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                     shapeId: shapeToErace.id,
                     roomId
                 }));
-                clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape);
+                clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
             }
         } else if (selectedTool === "text") {
             clicked = false;
-            const input = document.createElement("textarea");
-            input.style.position = "fixed";
-            input.style.left = `${e.clientX}px`;
-            input.style.top = `${e.clientY}px`;
-            input.style.background = "white";
-            input.style.border = "1px solid #6366f1";
-            input.style.borderRadius = "4px";
-            input.style.outline = "none";
-            input.style.font = "20px Arial";
-            input.style.color = "black";
-            input.style.padding = "4px";
-            input.style.margin = "0";
-            input.style.resize = "none";
-            input.style.overflow = "hidden";
-            input.style.whiteSpace = "nowrap";
-            input.style.zIndex = "1000";
-            input.style.boxShadow = "0 4px 6px -1px rgb(0 0 0 / 0.1)";
+            const shapeAt = findShapeAt(worldPos.x, worldPos.y, existingShapes, ctx!);
+            if (shapeAt && shapeAt.type === "text") {
+                showTextInput(e.clientX, e.clientY, worldPos, shapeAt);
+            } else {
+                showTextInput(e.clientX, e.clientY, worldPos);
+            }
+        }
+    };
 
-            input.onmousedown = (e) => e.stopPropagation();
-            input.onmouseup = (e) => e.stopPropagation();
-            input.onmousemove = (e) => e.stopPropagation();
+    const showTextInput = (clientX: number, clientY: number, worldPos: { x: number, y: number }, existingShape?: Shape) => {
+        const input = document.createElement("textarea");
+        input.style.position = "fixed";
+        input.style.left = `${clientX}px`;
+        input.style.top = `${clientY}px`;
+        input.style.background = "white";
+        input.style.border = "1px solid #6366f1";
+        input.style.borderRadius = "4px";
+        input.style.outline = "none";
+        input.style.font = "20px Arial";
+        input.style.color = "black";
+        input.style.padding = "4px";
+        input.style.margin = "0";
+        input.style.resize = "none";
+        input.style.overflow = "hidden";
+        input.style.whiteSpace = "nowrap";
+        input.style.zIndex = "1000";
+        input.style.boxShadow = "0 4px 6px -1px rgb(0 0 0 / 0.1)";
 
-            document.body.appendChild(input);
-            setTimeout(() => input.focus(), 0);
+        if (existingShape && isTextShape(existingShape)) {
+            input.value = existingShape.text;
+            // Adjust position to match existing text
+            const screenPos = worldToScreen(existingShape.x, existingShape.y);
+            input.style.left = `${screenPos.x + canvas.getBoundingClientRect().left}px`;
+            input.style.top = `${screenPos.y + canvas.getBoundingClientRect().top - 20 * camera.scale}px`;
+            input.style.font = `${20 * camera.scale}px Arial`;
+            input.style.color = existingShape.color || "black";
+        }
 
-            const handleBlur = () => {
-                const text = input.value.trim();
-                if (text) {
-                    const newShape: Shape = {
-                        type: "text",
-                        id: Math.random().toString(36).substring(2, 9),
-                        text,
-                        x: worldPos.x,
-                        y: worldPos.y,
-                        color: selectedColor
-                    };
-                    existingShapes.push(newShape);
-                    addToHistory({ type: "add", shape: newShape });
+        input.onmousedown = (e) => e.stopPropagation();
+        input.onmouseup = (e) => e.stopPropagation();
+        input.onmousemove = (e) => e.stopPropagation();
+
+        document.body.appendChild(input);
+        setTimeout(() => {
+            input.focus();
+            if (existingShape) {
+                input.setSelectionRange(input.value.length, input.value.length);
+            }
+        }, 0);
+
+        const handleBlur = () => {
+            const text = input.value.trim();
+            if (existingShape && isTextShape(existingShape)) {
+                if (text && text !== existingShape.text) {
+                    const oldShape = JSON.parse(JSON.stringify(existingShape));
+                    existingShape.text = text;
+                    addToHistory({ type: "update", oldShape, newShape: JSON.parse(JSON.stringify(existingShape)) });
                     socket.send(JSON.stringify({
-                        type: "chat",
-                        message: JSON.stringify({ shape: newShape }),
+                        type: "update_shape",
+                        shape: existingShape,
                         roomId
                     }));
-                    clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape);
+                } else if (!text) {
+                    // Delete if empty
+                    const idx = existingShapes.findIndex(s => s.id === existingShape.id);
+                    if (idx !== -1) {
+                        existingShapes.splice(idx, 1);
+                        addToHistory({ type: "delete", shape: existingShape });
+                        socket.send(JSON.stringify({ type: "delete_shape", shapeId: existingShape.id, roomId }));
+                    }
                 }
-                document.body.removeChild(input);
-            };
+            } else if (!existingShape && text) {
+                const newShape: Shape = {
+                    type: "text",
+                    id: Math.random().toString(36).substring(2, 9),
+                    text,
+                    x: worldPos.x,
+                    y: worldPos.y,
+                    color: selectedColor
+                };
+                existingShapes.push(newShape);
+                addToHistory({ type: "add", shape: newShape });
+                socket.send(JSON.stringify({
+                    type: "chat",
+                    message: JSON.stringify({ shape: newShape }),
+                    roomId
+                }));
+            }
+            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
+            document.body.removeChild(input);
+        };
 
-            input.onblur = handleBlur;
-            input.onkeydown = (event) => {
-                if (event.key === "Enter") {
-                    input.blur();
-                }
-            };
+        input.onblur = handleBlur;
+        input.onkeydown = (event) => {
+            if (event.key === "Enter") {
+                input.blur();
+            }
+            if (event.key === "Escape") {
+                if (existingShape && isTextShape(existingShape)) input.value = existingShape.text; // Revert
+                else input.value = "";
+                input.blur();
+            }
+        };
+    };
+
+    const handleDoubleClick = (e: MouseEvent) => {
+        const worldPos = screenToWorld(e.offsetX, e.offsetY);
+        const shape = findShapeAt(worldPos.x, worldPos.y, existingShapes, ctx);
+        if (shape && shape.type === "text") {
+            showTextInput(e.clientX, e.clientY, worldPos, shape);
         }
     };
 
@@ -328,7 +443,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                     }
                 }
             }
-            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape);
+            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
             return;
         }
 
@@ -383,7 +498,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                 message: JSON.stringify({ shape }),
                 roomId
             }));
-            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape);
+            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
         }
 
         if (selectedTool === "select" && startDragShape && JSON.stringify(selectedShape) !== JSON.stringify(startDragShape)) {
@@ -410,7 +525,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
             camera.y += deltaY;
             lastMouseX = e.clientX;
             lastMouseY = e.clientY;
-            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape);
+            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
             return;
         }
 
@@ -422,7 +537,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
             const width = worldPos.x - startX;
             const height = worldPos.y - startY;
 
-            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape);
+            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
 
             ctx.strokeStyle = selectedColor;
             ctx.lineWidth = 2;
@@ -465,7 +580,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                         shapeId: shapeToErace.id,
                         roomId
                     }));
-                    clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape);
+                    clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
                 }
             } else if (selectedTool === "select" && selectedShape) {
                 if (selectedShape.type === "rect") {
@@ -521,12 +636,40 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                         selectedShape.y = worldPos.y - dragOffsetY;
                     }
                 }
-                clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape);
+                clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
             }
         }
 
         if (selectedTool === "pan" || isSpacePressed) {
             canvas.style.cursor = clicked ? "grabbing" : "grab";
+        }
+
+        if (selectedTool === "laser") {
+            const worldPos = screenToWorld(e.offsetX, e.offsetY);
+            const now = Date.now();
+            const newPoint = { x: worldPos.x, y: worldPos.y, timestamp: now };
+
+            // Update locally for immediate feedback
+            const existing = laserPointers.get(myUserId);
+            if (existing) {
+                existing.points.push(newPoint);
+                if (existing.points.length > 20) existing.points.shift();
+                existing.lastUpdate = now;
+            } else {
+                laserPointers.set(myUserId, {
+                    points: [newPoint],
+                    name: myUserName,
+                    lastUpdate: now
+                });
+            }
+            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
+
+            socket.send(JSON.stringify({
+                type: "laser_pointer",
+                roomId,
+                x: worldPos.x,
+                y: worldPos.y
+            }));
         }
     };
 
@@ -543,7 +686,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
         camera.y = e.offsetY - worldPos.y * camera.scale;
 
         onZoomChange?.(camera.scale);
-        clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape);
+        clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
     };
 
     const handleTouchStart = (e: TouchEvent) => {
@@ -597,6 +740,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
     canvas.addEventListener('mousedown', handleMouseDown);
     canvas.addEventListener('mouseup', handleMouseUp);
     canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('dblclick', handleDoubleClick);
     canvas.addEventListener('wheel', handleWheel, { passive: false });
 
     canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
@@ -614,7 +758,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
 
     const updateBackgroundColor = (newColor: string) => {
         backgroundColor = newColor;
-        clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache);
+        clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, null, laserPointers);
     };
 
     const resetView = () => {
@@ -622,7 +766,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
         camera.y = 0;
         camera.scale = 1;
         onZoomChange?.(camera.scale);
-        clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape);
+        clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
     };
 
     const undo = () => {
@@ -642,7 +786,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
             if (index !== -1) existingShapes[index] = op.oldShape;
             socket.send(JSON.stringify({ type: "update_shape", shape: op.oldShape, roomId }));
         }
-        clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache);
+        clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, null, laserPointers);
     };
 
     function redo() {
@@ -670,7 +814,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
             if (index !== -1) existingShapes[index] = op.newShape;
             socket.send(JSON.stringify({ type: "update_shape", shape: op.newShape, roomId }));
         }
-        clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache);
+        clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, null, laserPointers);
     }
 
     function insertImage(data: string, x: number, y: number, width: number, height: number) {
@@ -690,7 +834,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
             message: JSON.stringify({ shape: imageShape }),
             roomId
         }));
-        clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache);
+        clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, null, laserPointers);
     }
 
     function cleanup() {
@@ -703,6 +847,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
         canvas.removeEventListener('touchend', handleTouchEnd);
         window.removeEventListener("keydown", handleKeyDown);
         window.removeEventListener("keyup", handleKeyUp);
+        clearInterval(laserCleanupInterval);
     }
 
     return {
@@ -751,11 +896,11 @@ function findShapeAt(x: number, y: number, existingShapes: Shape[], ctx: CanvasR
     return null;
 }
 
-function clearCanvas(existingShapes: Shape[], canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, camera: { x: number, y: number, scale: number }, backgroundColor: string, imageCache: Map<string, HTMLImageElement>, selectedShape: Shape | null = null) {
-    renderScene(existingShapes, canvas, ctx, camera, backgroundColor, imageCache, selectedShape);
+function clearCanvas(existingShapes: Shape[], canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, camera: { x: number, y: number, scale: number }, backgroundColor: string, imageCache: Map<string, HTMLImageElement>, selectedShape: Shape | null = null, laserPointers?: Map<string, LaserPointerData>) {
+    renderScene(existingShapes, canvas, ctx, camera, backgroundColor, imageCache, selectedShape, laserPointers);
 }
 
-function renderScene(existingShapes: Shape[], canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, camera: { x: number, y: number, scale: number }, backgroundColor: string, imageCache: Map<string, HTMLImageElement>, selectedShape: Shape | null = null) {
+function renderScene(existingShapes: Shape[], canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, camera: { x: number, y: number, scale: number }, backgroundColor: string, imageCache: Map<string, HTMLImageElement>, selectedShape: Shape | null = null, laserPointers?: Map<string, LaserPointerData>) {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = backgroundColor;
@@ -797,13 +942,82 @@ function renderScene(existingShapes: Shape[], canvas: HTMLCanvasElement, ctx: Ca
                 img.onload = () => {
                     imageCache.set(shape.data, img!);
                     // Trigger a re-render once loaded
-                    renderScene(existingShapes, canvas, ctx, camera, backgroundColor, imageCache, selectedShape);
+                    renderScene(existingShapes, canvas, ctx, camera, backgroundColor, imageCache, selectedShape, laserPointers);
                 };
             } else if (img.complete) {
                 ctx.drawImage(img, shape.x, shape.y, shape.width, shape.height);
             }
         }
     });
+
+    // Draw Laser Pointers with Trail
+    if (laserPointers) {
+        const now = Date.now();
+        laserPointers.forEach((data) => {
+            if (data.points.length === 0) return;
+
+            const age = now - data.lastUpdate;
+            if (age > 1500) return;
+            const overallOpacity = Math.max(0, 1 - age / 1500);
+
+            // 1. Draw Trail segments
+            if (data.points.length > 1) {
+                ctx.save();
+                ctx.lineCap = "round";
+                ctx.lineJoin = "round";
+                ctx.shadowColor = "red";
+
+                for (let i = 1; i < data.points.length; i++) {
+                    const p1 = data.points[i - 1];
+                    const p2 = data.points[i];
+                    const pointAge = now - p2.timestamp;
+                    const trailOpacity = Math.max(0, 1 - pointAge / 800);
+
+                    if (trailOpacity <= 0) continue;
+
+                    ctx.beginPath();
+                    ctx.strokeStyle = `rgba(255, 0, 0, ${overallOpacity * trailOpacity * 0.5})`;
+                    ctx.lineWidth = (6 / camera.scale) * trailOpacity;
+                    ctx.shadowBlur = (8 / camera.scale) * trailOpacity;
+
+                    ctx.moveTo(p1.x, p1.y);
+                    ctx.lineTo(p2.x, p2.y);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+
+            // 2. Draw Current Pointer Head
+            const head = data.points[data.points.length - 1];
+            ctx.save();
+            ctx.beginPath();
+            const radius = 6 / camera.scale;
+
+            // Draw glow
+            const gradient = ctx.createRadialGradient(head.x, head.y, 0, head.x, head.y, radius * 3);
+            gradient.addColorStop(0, `rgba(255, 0, 0, ${overallOpacity * 0.6})`);
+            gradient.addColorStop(1, `rgba(255, 0, 0, 0)`);
+            ctx.fillStyle = gradient;
+            ctx.arc(head.x, head.y, radius * 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw core
+            ctx.beginPath();
+            ctx.fillStyle = `rgba(255, 0, 0, ${overallOpacity})`;
+            ctx.arc(head.x, head.y, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw Name tag
+            ctx.font = `${12 / camera.scale}px sans-serif`;
+            const nameWidth = ctx.measureText(data.name).width;
+            ctx.fillStyle = `rgba(0, 0, 0, ${overallOpacity * 0.7})`;
+            ctx.fillRect(head.x + radius + 2, head.y - radius - 15 / camera.scale, nameWidth + 8 / camera.scale, 16 / camera.scale);
+            ctx.fillStyle = `rgba(255, 255, 255, ${overallOpacity})`;
+            ctx.fillText(data.name, head.x + radius + 6, head.y - radius - 2);
+
+            ctx.restore();
+        });
+    }
 
     // Draw handles for selected image
     if (selectedShape && selectedShape.type === "image") {
@@ -852,9 +1066,12 @@ async function getExistingShapes(roomId: string, token: string) {
         return shapes;
     } catch (e: any) {
         if (e.response) {
-            console.error("Failed to fetch existing shapes. Server said:", e.response.status, e.response.data);
+            console.error(`Failed to fetch existing shapes. Server said: ${e.response.status}`, e.response.data);
+            if (e.response.status === 403) {
+                console.error("403 Forbidden: Check if CLERK_SECRET_KEY is identical in both http-backend and ws-backend, and matches your Clerk dashboard.");
+            }
         } else {
-            console.error("Failed to fetch existing shapes", e);
+            console.error("Failed to fetch existing shapes", e.message || e);
         }
         return [];
     }

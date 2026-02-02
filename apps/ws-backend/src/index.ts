@@ -147,8 +147,18 @@ wss.on('connection', async function connection(ws, request) {
         parsedData = JSON.parse(data);
       }
     } catch (e) {
+      console.error("Failed to parse WS message:", e);
       return;
     }
+
+    try {
+      await processParsedMessage(parsedData);
+    } catch (e) {
+      console.error("Error processing WS message:", e);
+    }
+  }
+
+  async function processParsedMessage(parsedData: any) {
 
     async function resolveRoomId(idOrSlug: string, autoCreate = false): Promise<number | null> {
       const id = Number(idOrSlug);
@@ -261,6 +271,8 @@ wss.on('connection', async function connection(ws, request) {
     if (parsedData.type === "delete_shape") {
       const roomIdStr = parsedData.roomId;
       const shapeId = parsedData.shapeId;
+      if (!roomIdStr || !shapeId) return;
+
       const roomId = await resolveRoomId(roomIdStr);
 
       if (roomId) {
@@ -288,6 +300,8 @@ wss.on('connection', async function connection(ws, request) {
     if (parsedData.type === "update_shape") {
       const roomIdStr = parsedData.roomId;
       const shape = parsedData.shape;
+      if (!roomIdStr || !shape || !shape.id) return;
+
       const roomId = await resolveRoomId(roomIdStr);
 
       if (roomId) {
@@ -474,6 +488,26 @@ wss.on('connection', async function connection(ws, request) {
       } else {
         console.warn(`Target user ${targetUserId} not found for voice_accept in room ${roomIdStr}`);
       }
+    }
+
+    if (parsedData.type === "laser_pointer") {
+      const roomIdStr = parsedData.roomId?.toString() || "";
+      const x = parsedData.x;
+      const y = parsedData.y;
+      const user = users.find(u => u.ws === ws);
+
+      users.forEach(u => {
+        if (u.ws !== ws && u.rooms.includes(roomIdStr)) {
+          u.ws.send(JSON.stringify({
+            type: "laser_pointer",
+            userId: user?.userId || "anon",
+            name: user?.name || "User",
+            x,
+            y,
+            roomId: roomIdStr
+          }));
+        }
+      });
     }
   }
 

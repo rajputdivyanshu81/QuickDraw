@@ -1,7 +1,7 @@
-import { Pencil, Square, Circle, Eraser, Type, MousePointer2, Share2, Check, Download, Image as ImageIcon, FileText, Minus, Hand } from "lucide-react";
+import { Pencil, Square, Circle, Eraser, Type, MousePointer2, Share2, Check, Download, Image as ImageIcon, FileText, Minus, Hand, Zap } from "lucide-react";
 import { useState } from "react";
 
-export type Tool = "rect" | "circle" | "pencil" | "eraser" | "text" | "select" | "line" | "pan" | "ppt-capture";
+export type Tool = "rect" | "circle" | "pencil" | "eraser" | "text" | "select" | "line" | "pan" | "ppt-capture" | "laser";
 
 export function Toolbar({ selectedTool, onSelect, selectedColor, onColorSelect, onDownload, onImageUpload, onResetView, zoom }: { 
     selectedTool: Tool, 
@@ -85,6 +85,13 @@ export function Toolbar({ selectedTool, onSelect, selectedColor, onColorSelect, 
                 >
                     <Eraser className="w-4 h-4 md:w-5 md:h-5" />
                 </button>
+                <button 
+                    onClick={() => onSelect("laser")}
+                    className={`p-1.5 md:p-2 rounded-xl md:rounded-full hover:bg-gray-100 transition-colors ${selectedTool === "laser" ? "bg-red-100 text-red-600" : "text-gray-600"}`}
+                    title="Laser Pointer"
+                >
+                    <Zap className="w-4 h-4 md:w-5 md:h-5" />
+                </button>
             </div>
 
             <div className="flex items-center gap-1 md:gap-2 border-r border-gray-200 pr-1.5 md:pr-2 shrink-0">
@@ -115,7 +122,7 @@ export function Toolbar({ selectedTool, onSelect, selectedColor, onColorSelect, 
                     className="flex items-center justify-center p-1.5 md:px-3 md:py-1.5 rounded-xl md:rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs md:text-sm font-medium transition-colors shadow-sm"
                     title="Reset View (Esc)"
                 >
-                    <span className="hidden lg:inline">Reset View</span>
+                    <span className="hidden lg:inline mr-1">Reset View</span>
                     <Hand className="w-4 h-4" />
                 </button>
 
