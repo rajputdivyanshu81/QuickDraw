@@ -8,14 +8,27 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 model User {
-  id        String      @id @default(uuid())
-  email     String      @unique
-  password  String
-  name      String
-  photo     String?
-  rooms     Room[]
-  chats     Chat[]
-  roomMessages RoomMessage[]
+  id                  String      @id @default(uuid())
+  email               String      @unique
+  password            String
+  name                String
+  photo               String?
+  isLifetimeSubscriber Boolean     @default(false)
+  rooms               Room[]
+  chats               Chat[]
+  roomMessages        RoomMessage[]
+  payments            Payment[]
+}
+
+model Payment {
+  id        Int      @id @default(autoincrement())
+  txnId     String   @unique
+  amount    Float
+  status    String   // PENDING, SUCCESS, FAILURE
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Room {

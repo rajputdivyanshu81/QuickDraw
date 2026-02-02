@@ -89,7 +89,7 @@ export default function LandingPage() {
             <div className="hidden md:flex items-center space-x-10">
               <a href="#features" className="text-sm font-medium text-gray-400 hover:text-white transition-colors">Features</a>
               <a href="#integrations" className="text-sm font-medium text-gray-400 hover:text-white transition-colors">Integrations</a>
-              <span onClick={() => router.push('/coming-soon')} className="text-sm font-medium text-gray-400 hover:text-white transition-colors cursor-pointer">Pricing</span>
+              <span onClick={() => router.push('/pricing')} className="text-sm font-medium text-gray-400 hover:text-white transition-colors cursor-pointer">Pricing</span>
               <div className="h-6 w-px bg-white/10" />
               <SignedIn>
                 <div className="flex items-center gap-4">
@@ -173,7 +173,7 @@ export default function LandingPage() {
                   Open new canvas <ArrowRight className="ml-2 w-5 h-5" />
                 </button>
               </SignedIn>
-              <button onClick={() => router.push('/coming-soon')} className="w-full sm:w-auto px-10 py-4 rounded-2xl border border-white/10 hover:bg-white/5 transition-all font-semibold flex items-center justify-center text-gray-300 outline-none cursor-pointer">
+              <button onClick={() => router.push('/pricing')} className="w-full sm:w-auto px-10 py-4 rounded-2xl border border-white/10 hover:bg-white/5 transition-all font-semibold flex items-center justify-center text-gray-300 outline-none cursor-pointer">
                 Watch demo
               </button>
             </motion.div>
@@ -366,8 +366,8 @@ export default function LandingPage() {
               <div className="space-y-4">
                 <h4 className="text-xs font-bold uppercase tracking-widest text-white">Pricing</h4>
                 <ul className="space-y-2 text-sm text-gray-500">
-                  <li onClick={() => router.push('/coming-soon')} className="hover:text-white transition-colors cursor-pointer">Free Plan</li>
-                  <li onClick={() => router.push('/coming-soon')} className="hover:text-white transition-colors cursor-pointer">Pro Plan</li>
+                  <li onClick={() => router.push('/pricing')} className="hover:text-white transition-colors cursor-pointer">Lifetime Plan</li>
+                  <li onClick={() => router.push('/pricing')} className="hover:text-white transition-colors cursor-pointer">Free Plan</li>
                 </ul>
               </div>
             </div>

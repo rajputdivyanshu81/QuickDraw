@@ -5,11 +5,13 @@ import { prismaClient } from '@repo/db/client';
 import cors from "cors";
 import PptxGenJS from "pptxgenjs";
 import dotenv from "dotenv";
+import { generatePaymentHash, verifyPaymentResponse } from './payment.js';
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
 console.log("HTTP Backend starting...");
@@ -168,6 +170,102 @@ app.post("/generate-ppt", async (req: Request, res: Response) => {
     } catch (e: any) {
         console.error("PPT Generation Error:", e);
         res.status(500).json({ message: "Failed to generate PPT" });
+    }
+});
+
+app.post("/api/create-payment", middleware, async (req: Request, res: Response) => {
+    // @ts-ignore
+    const userId = req.userId;
+    const { amount, productInfo, firstName, email } = req.body;
+
+    if (!process.env.PAYU_MERCHANT_KEY || !process.env.PAYU_MERCHANT_SALT) {
+        console.error("CRITICAL: PAYU_MERCHANT_KEY or PAYU_MERCHANT_SALT missing in .env");
+        res.status(500).json({ message: "Payment gateway not configured. Merchant Key or Salt missing in backend .env" });
+        return;
+    }
+
+    const txnid = `tx_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+    try {
+        await prismaClient.payment.create({
+            data: {
+                txnId: txnid,
+                amount: parseFloat(amount),
+                status: "PENDING",
+                userId: userId
+            }
+        });
+
+        const hash = generatePaymentHash({
+            key: process.env.PAYU_MERCHANT_KEY,
+            txnid: txnid,
+            amount: amount,
+            productinfo: productInfo,
+            firstname: firstName,
+            email: email,
+            salt: process.env.PAYU_MERCHANT_SALT
+        });
+
+        res.json({
+            key: process.env.PAYU_MERCHANT_KEY,
+            txnid: txnid,
+            amount: amount,
+            productinfo: productInfo,
+            firstname: firstName,
+            email: email,
+            phone: '9999999999',
+            hash: hash,
+            surl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment-success`,
+            furl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment-failure`
+        });
+    } catch (e) {
+        console.error("Create payment error:", e);
+        res.status(500).json({ message: "Failed to initiate payment" });
+    }
+});
+
+app.post("/api/payment-callback", async (req: Request, res: Response) => {
+    const payuData = req.body;
+
+    if (!process.env.PAYU_MERCHANT_SALT) {
+        res.status(500).json({ message: "Auth config missing" });
+        return;
+    }
+
+    const isValid = verifyPaymentResponse(payuData, process.env.PAYU_MERCHANT_SALT);
+
+    if (!isValid) {
+        console.error("Invalid payment hash received!");
+        res.status(400).send("Invalid Hash");
+        return;
+    }
+
+    const { txnid, status } = payuData;
+
+    try {
+        if (status === "success") {
+            const payment = await prismaClient.payment.update({
+                where: { txnId: txnid },
+                data: { status: "SUCCESS" }
+            });
+
+            await prismaClient.user.update({
+                where: { id: payment.userId },
+                data: { isLifetimeSubscriber: true }
+            });
+
+            console.log(`Payment success: ${txnid} for user ${payment.userId}`);
+        } else {
+            await prismaClient.payment.update({
+                where: { txnId: txnid },
+                data: { status: "FAILURE" }
+            });
+        }
+
+        res.status(200).send("Callback Processed");
+    } catch (e) {
+        console.error("Payment callback processing error:", e);
+        res.status(500).send("Error");
     }
 });
 
