@@ -15,6 +15,7 @@ interface Message {
     message: string;
     userId: string;
     roomId: string;
+    name?: string; // Add name property
     type: "group_message";
 }
 
@@ -99,17 +100,21 @@ export function ChatSidebar({ roomId, socket, isOpen, onClose, userId }: ChatSid
                         animate={{ x: 0 }}
                         exit={{ x: "100%" }}
                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                        className="fixed top-0 right-0 h-full w-full md:w-80 bg-white shadow-2xl z-50 flex flex-col border-l border-gray-200"
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onTouchStart={(e) => e.stopPropagation()}
+                        className="fixed top-0 right-0 h-full w-full md:w-80 bg-white shadow-2xl z-[60] flex flex-col md:border-l border-gray-200"
                     >
                         {/* Header */}
-                        <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50 backdrop-blur-sm">
+                        <div className="p-3 md:p-4 border-b border-gray-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
                             <div className="flex items-center gap-2">
-                                <MessageSquare className="w-5 h-5 text-indigo-600" />
-                                <h2 className="font-semibold text-gray-800">Group Chat</h2>
+                                <div className="p-1.5 bg-indigo-50 rounded-lg">
+                                    <MessageSquare className="w-5 h-5 text-indigo-600" />
+                                </div>
+                                <h2 className="font-semibold text-gray-800 text-sm md:text-base">Group Chat</h2>
                             </div>
                             <button 
                                 onClick={onClose}
-                                className="p-2 hover:bg-gray-200 rounded-full transition-colors"
+                                className="p-2 hover:bg-gray-100 rounded-full transition-colors active:scale-90"
                             >
                                 <X className="w-5 h-5 text-gray-500" />
                             </button>
@@ -130,17 +135,17 @@ export function ChatSidebar({ roomId, socket, isOpen, onClose, userId }: ChatSid
                                     return (
                                         <div key={idx} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
                                             <div 
-                                                className={`max-w-[85%] rounded-2xl px-4 py-2 shadow-sm ${
+                                                className={`max-w-[90%] md:max-w-[85%] rounded-2xl px-3 md:px-4 py-2 shadow-sm ${
                                                     isMe 
                                                         ? "bg-indigo-600 text-white rounded-br-none" 
                                                         : "bg-white border border-gray-100 text-gray-800 rounded-bl-none"
                                                 }`}
                                             >
-                                                <p className="text-sm">{msg.message}</p>
+                                                <p className="text-sm leading-relaxed">{msg.message}</p>
                                             </div>
                                             {!isMe && (
-                                                <span className="text-[10px] text-gray-400 mt-1 px-1">
-                                                    {msg.name || `User: ${msg.userId.slice(0, 8)}...`}
+                                                <span className="text-[10px] text-gray-400 mt-1 px-1 font-medium">
+                                                    {msg.name || "Anonymous User"}
                                                 </span>
                                             )}
                                         </div>
@@ -151,8 +156,8 @@ export function ChatSidebar({ roomId, socket, isOpen, onClose, userId }: ChatSid
                         </div>
 
                         {/* Input Area */}
-                        <div className="p-4 bg-white border-t border-gray-100">
-                            <div className="flex gap-2 items-center bg-gray-50 rounded-full px-4 py-2 border border-gray-200 focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all">
+                        <div className="p-3 md:p-4 bg-white border-t border-gray-100 pb-[env(safe-area-inset-bottom,16px)]">
+                            <div className="flex gap-2 items-center bg-gray-50 rounded-2xl px-3 md:px-4 py-1.5 md:py-2 border border-gray-200 focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all">
                                 <input
                                     type="text"
                                     value={inputValue}
@@ -164,7 +169,7 @@ export function ChatSidebar({ roomId, socket, isOpen, onClose, userId }: ChatSid
                                 <button
                                     onClick={handleSendMessage}
                                     disabled={!inputValue.trim()}
-                                    className="p-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:hover:bg-indigo-600 text-white rounded-full transition-all shadow-sm transform active:scale-95"
+                                    className="p-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:hover:bg-indigo-600 text-white rounded-xl transition-all shadow-sm transform active:scale-95 shrink-0"
                                 >
                                     <Send className="w-4 h-4" />
                                 </button>

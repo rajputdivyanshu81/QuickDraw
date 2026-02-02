@@ -8,6 +8,7 @@ interface CustomRequest extends Request {
 
 export async function middleware(req: CustomRequest, res: Response, next: NextFunction) {
     const token = req.headers["authorization"] ?? "";
+    let jwt: string = "";
 
     if (!process.env.CLERK_SECRET_KEY) {
         console.error("CRITICAL ERROR: CLERK_SECRET_KEY is missing in http-backend environment variables!");
@@ -16,13 +17,18 @@ export async function middleware(req: CustomRequest, res: Response, next: NextFu
     }
 
     try {
-        console.log("Middleware verifying token:", token.substring(0, 10) + "...");
-        const decoded = await verifyToken(token, {
+        console.log("Middleware received Authorization header:", token ? token.substring(0, 50) + "..." : "EMPTY");
+
+        // Remove 'Bearer ' prefix if present
+        jwt = token.startsWith("Bearer ") ? token.split(" ")[1] ?? token : token;
+        console.log("Extracted JWT for verification:", jwt ? jwt.substring(0, 20) + "..." : "EMPTY");
+
+        const decoded = await verifyToken(jwt, {
             secretKey: process.env.CLERK_SECRET_KEY,
         });
 
         if (!decoded || !decoded.sub) {
-            console.error("Auth failed: Invalid token or sub missing");
+            console.error("Auth failed: Invalid token or sub missing. Decoded object:", decoded);
             res.status(403).json({
                 message: "Unauthorized"
             });
@@ -52,9 +58,17 @@ export async function middleware(req: CustomRequest, res: Response, next: NextFu
         req.userId = decoded.sub;
         next();
     } catch (err: any) {
-        console.error("Auth error:", err);
+        console.error("Auth error details:", {
+            message: err.message,
+            stack: err.stack,
+            reason: err.reason, // Clerk specific sometimes
+            tokenSnippet: jwt ? jwt.substring(0, 10) + "..." : "NONE",
+            keySnippet: process.env.CLERK_SECRET_KEY ? process.env.CLERK_SECRET_KEY.substring(0, 10) + "..." : "NONE"
+        });
         res.status(403).json({
-            message: "Unauthorized"
+            message: "Unauthorized",
+            debug: err.message || "Unknown auth error",
+            stack: err.stack
         });
     }
 }

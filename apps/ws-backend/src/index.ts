@@ -82,11 +82,48 @@ wss.on('connection', async function connection(ws, request) {
       }
     });
 
+    // Remove any stale connection for this user from registry
+    const existingUserIndex = users.findIndex(u => u.userId === userId);
+    if (existingUserIndex !== -1) {
+      console.log(`Replacing stale connection for user: ${userId}`);
+      users.splice(existingUserIndex, 1);
+    }
+
     users.push({
       userId,
       rooms: [],
       ws,
       name: userData.name
+    });
+
+    ws.on('close', () => {
+      const index = users.findIndex(u => u.ws === ws);
+      if (index !== -1) {
+        const user = users[index];
+        if (user) {
+          const uId = user.userId;
+          const uRooms = [...user.rooms];
+          console.log(`User registry cleanup: ${uId} disconnected`);
+          users.splice(index, 1);
+
+          // Notify others in rooms that this user left voice
+          uRooms.forEach(room => {
+            users.forEach(other => {
+              if (other.rooms.includes(room)) {
+                try {
+                  other.ws.send(JSON.stringify({
+                    type: "voice_left",
+                    userId: uId,
+                    roomId: room
+                  }));
+                } catch (e) {
+                  // Ignore send errors for disconnected peers
+                }
+              }
+            });
+          });
+        }
+      }
     });
 
     // 3. Process queued messages
@@ -180,7 +217,8 @@ wss.on('connection', async function connection(ws, request) {
       }
     }
 
-    console.log("message received", parsedData.type);
+    console.log("-----------------------------------");
+    console.log("WebSocket message received:", parsedData.type, "from", userId);
 
     if (parsedData.type === "chat") {
       const roomIdStr = parsedData.roomId;
@@ -337,14 +375,107 @@ wss.on('connection', async function connection(ws, request) {
         console.error("Could not resolve roomId for group_message:", roomIdStr);
       }
     }
+
+    if (parsedData.type === "voice_query") {
+      const roomIdStr = parsedData.roomId?.toString() || "";
+      console.log(`Voice query in room: ${roomIdStr}`);
+      users.forEach(user => {
+        if (user.ws !== ws && user.rooms.includes(roomIdStr)) {
+          user.ws.send(JSON.stringify({
+            type: "voice_query",
+            roomId: roomIdStr
+          }));
+        }
+      });
+    }
+
+    if (parsedData.type === "voice_ready") {
+      const roomIdStr = parsedData.roomId?.toString() || "";
+      console.log(`User ${userId} ready for voice in room ${roomIdStr}`);
+      // Broadcast to others in the room that this user is ready for voice
+      users.forEach(user => {
+        if (user.ws !== ws && user.rooms.includes(roomIdStr)) {
+          user.ws.send(JSON.stringify({
+            type: "voice_ready",
+            userId: userId,
+            name: users.find(u => u.ws === ws)?.name || "Unknown",
+            roomId: roomIdStr
+          }));
+        }
+      });
+    }
+
+    if (parsedData.type === "voice_signal") {
+      const roomIdStr = parsedData.roomId?.toString() || "";
+      const targetUserId = parsedData.targetUserId;
+      const signal = parsedData.signal;
+
+      console.log(`Voice signal [${signal.type || 'candidate'}] from ${userId} to ${targetUserId} in room ${roomIdStr}`);
+
+      // Forward signaling data to a specific user
+      const targetUser = users.find(u => u.userId === targetUserId && u.rooms.includes(roomIdStr));
+      if (targetUser) {
+        console.log(`Routing signal to ${targetUserId}`);
+        targetUser.ws.send(JSON.stringify({
+          type: "voice_signal",
+          senderId: userId,
+          senderName: users.find(u => u.ws === ws)?.name || "User",
+          signal,
+          roomId: roomIdStr
+        }));
+      } else {
+        const roomPeers = users.filter(u => u.rooms.includes(roomIdStr)).map(u => u.userId);
+        console.warn(`Signaling target ${targetUserId} not found in room ${roomIdStr}. Participants:`, roomPeers);
+      }
+    }
+
+    if (parsedData.type === "voice_left") {
+      const roomIdStr = parsedData.roomId;
+      users.forEach(user => {
+        if (user.ws !== ws && user.rooms.includes(roomIdStr.toString())) {
+          user.ws.send(JSON.stringify({
+            type: "voice_left",
+            userId: userId,
+            roomId: roomIdStr
+          }));
+        }
+      });
+    }
+
+    if (parsedData.type === "voice_request") {
+      const roomIdStr = parsedData.roomId?.toString() || "";
+      console.log(`Voice request from ${userId} in room ${roomIdStr}`);
+      // Forward request to all current voice participants in the room
+      users.forEach(user => {
+        if (user.ws !== ws && user.rooms.includes(roomIdStr)) {
+          console.log(`Forwarding voice request to participant: ${user.userId}`);
+          user.ws.send(JSON.stringify({
+            type: "voice_request",
+            userId: userId,
+            name: users.find(u => u.ws === ws)?.name || "User",
+            roomId: roomIdStr
+          }));
+        }
+      });
+    }
+
+    if (parsedData.type === "voice_accept") {
+      const roomIdStr = parsedData.roomId?.toString() || "";
+      const targetUserId = parsedData.targetUserId;
+      console.log(`Voice accept from ${userId} for ${targetUserId} in room ${roomIdStr}`);
+
+      const targetUser = users.find(u => u.userId === targetUserId && u.rooms.includes(roomIdStr));
+      if (targetUser) {
+        console.log(`Forwarding voice accept to ${targetUserId}`);
+        targetUser.ws.send(JSON.stringify({
+          type: "voice_accept",
+          roomId: roomIdStr
+        }));
+      } else {
+        console.warn(`Target user ${targetUserId} not found for voice_accept in room ${roomIdStr}`);
+      }
+    }
   }
 
-  ws.on('close', () => {
-    const index = users.findIndex(x => x.ws === ws);
-    if (index !== -1) {
-      users.splice(index, 1);
-    }
-    console.log("User disconnected");
-  });
 
 });

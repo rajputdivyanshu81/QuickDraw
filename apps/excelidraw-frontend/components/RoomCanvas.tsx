@@ -18,7 +18,12 @@ export function RoomCanvas({ roomId }: { roomId: string }) {
         const initWs = async () => {
             try {
                 const authToken = await getToken();
-                if (!authToken) return;
+                if (!authToken) {
+                    console.error("No auth token received from Clerk");
+                    setError("Authentication failed: No token received.");
+                    return;
+                }
+                console.log("Auth token received, length:", authToken.length);
                 setToken(authToken);
 
                 const ws = new WebSocket(`${WS_URL}?token=${authToken}`);
