@@ -3,6 +3,10 @@ import { middleware } from './middleware.js';
 import { CreateRoomSchema } from '@repo/common/types';
 import { prismaClient } from '@repo/db/client';
 import cors from "cors";
+import PptxGenJS from "pptxgenjs";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
 app.use(express.json());
@@ -94,6 +98,78 @@ app.get("/room/:slug", async (req: Request, res: Response) => {
 })
 
 
+
+
+app.post("/ai-chat", async (req: Request, res: Response) => {
+    const { messages } = req.body;
+    const apiKey = process.env.GROQ_API_KEY;
+
+    if (!apiKey) {
+        res.status(500).json({ message: "AI service not configured" });
+        return;
+    }
+
+    try {
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${apiKey}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                messages: messages,
+                model: "llama-3.3-70b-versatile"
+            })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error?.message || "Failed to fetch from Groq");
+        }
+
+        res.json(data);
+    } catch (e: any) {
+        console.error("AI Chat Error:", e);
+        res.status(500).json({ message: e.message || "Internal Server Error" });
+    }
+});
+
+app.post("/generate-ppt", async (req: Request, res: Response) => {
+    try {
+        const { slides } = req.body;
+        if (!slides || !Array.isArray(slides)) {
+            res.status(400).json({ message: "Invalid slides data" });
+            return;
+        }
+
+        const pres = new PptxGenJS();
+
+        slides.forEach((slideData: { image: string }, index: number) => {
+            const slide = pres.addSlide();
+            // Handle base64 image data
+            if (slideData.image) {
+                slide.addImage({
+                    data: slideData.image,
+                    x: "10%",
+                    y: "10%",
+                    w: "80%",
+                    h: "80%",
+                    sizing: { type: "contain", w: "80%", h: "80%" }
+                });
+            }
+        });
+
+        const buffer = await pres.write({ outputType: "nodebuffer" });
+
+        res.setHeader("Content-Disposition", "attachment; filename=presentation.pptx");
+        res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.presentationml.presentation");
+        res.send(buffer);
+
+    } catch (e: any) {
+        console.error("PPT Generation Error:", e);
+        res.status(500).json({ message: "Failed to generate PPT" });
+    }
+});
 
 app.listen(3001, () => {
     console.log('Server is running on port 3001');
