@@ -107,7 +107,7 @@ export function VoiceChat({ roomId, socket, userId, userName }: VoiceChatProps) 
                 roomId
             });
         }
-    }, [roomId, socket]); // Run only on room/socket change
+    }, [roomId, socket, safeSend]); // Run only on room/socket change
 
     const handleJoinClick = () => {
         if (othersInVoice.length === 0) {
