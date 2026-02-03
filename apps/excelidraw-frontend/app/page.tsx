@@ -9,9 +9,6 @@ import {
   Zap, 
   Users, 
   ArrowRight, 
-  CheckCircle2, 
-  MousePointer2, 
-  Layout, 
   Shield,
   Layers
 } from 'lucide-react';
