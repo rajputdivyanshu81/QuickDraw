@@ -12,12 +12,8 @@ import {
   CheckCircle2, 
   MousePointer2, 
   Layout, 
-  Github, 
-  Twitter, 
-  Linkedin,
   Shield,
-  Layers,
-  Sparkle
+  Layers
 } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -37,9 +33,6 @@ const SparklesIcon = Sparkles as any;
 const ZapIcon = Zap as any;
 const UsersIcon = Users as any;
 const ArrowRightIcon = ArrowRight as any;
-const CheckCircle2Icon = CheckCircle2 as any;
-const MousePointer2Icon = MousePointer2 as any;
-const LayoutIcon = Layout as any;
 const ShieldIcon = Shield as any;
 const LayersIcon = Layers as any;
 const NextImage = Image as any;

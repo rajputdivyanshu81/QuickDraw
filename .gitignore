@@ -36,3 +36,11 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+
+# Packages build artifacts
+packages/backend-common/*.js
+packages/backend-common/*.d.ts
+packages/backend-common/*.map
+packages/backend-common/src/*.js
+packages/backend-common/src/*.d.ts
+packages/backend-common/src/*.map
