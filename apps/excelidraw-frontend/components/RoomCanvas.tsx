@@ -26,6 +26,7 @@ export function RoomCanvas({ roomId }: { roomId: string }) {
                 console.log("Auth token received, length:", authToken.length);
                 setToken(authToken);
 
+                console.log("Attempting WebSocket connection with URL:", WS_URL);
                 const ws = new WebSocket(`${WS_URL}?token=${authToken}`);
                 wsRef.current = ws;
                 
