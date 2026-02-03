@@ -27,7 +27,7 @@ services:
     env: node
     plan: free
     rootDir: apps/ws-backend
-    buildCommand: pnpm install && pnpm build
+    buildCommand: pnpm install && cd packages/db && pnpm db:generate && cd ../.. && pnpm build
     startCommand: pnpm start
     envVars:
       - key: DATABASE_URL
