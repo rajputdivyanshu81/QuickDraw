@@ -11,7 +11,7 @@
     "postinstall": "npm run db:generate"
   },
   "devDependencies": {
-    "@repo/typescript-config": "workspace:*"
+    "@repo/typescript-config": "*"
   },
   "keywords": [],
   "author": "",

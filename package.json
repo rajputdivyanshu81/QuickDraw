@@ -1,5 +1,5 @@
 {
-  "name": "QuickDraw",
+  "name": "quickdraw",
   "private": true,
   "scripts": {
     "build": "turbo build",
@@ -12,7 +12,10 @@
     "turbo": "^2.4.0",
     "typescript": "5.7.3"
   },
-  "packageManager": "pnpm@8.15.4",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "engines": {
     "node": "20.x"
   }
