@@ -172,13 +172,14 @@ export default function LandingPage() {
           >
             <div className="relative group p-1.5 bg-gradient-to-b from-white/10 to-transparent rounded-[2rem] shadow-[0_0_80px_-15px_rgba(79,70,229,0.3)]">
               <div className="rounded-[1.8rem] overflow-hidden bg-[#0a0a0a] border border-white/10">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img 
-                  src="/hero.png" 
-                  alt="DrawFlow Interface" 
-                  className="w-full object-cover transform scale-100 group-hover:scale-105 transition-transform duration-[2s] opacity-90"
+                <Image
+                  src="/hero.png"
+                  alt="DrawFlow Interface"
+                  width={1200}
+                  height={800}
+                  className="w-full h-auto object-cover transform scale-100 group-hover:scale-105 transition-transform duration-[2s] opacity-90"
                 />
-                
+
                 {/* Floating UI Overlays */}
                 <div className="absolute top-8 left-8 p-4 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 hidden md:block">
                   <div className="flex items-center gap-3">

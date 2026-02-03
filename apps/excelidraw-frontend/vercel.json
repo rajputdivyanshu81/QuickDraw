@@ -1,0 +1,6 @@
+{
+  "buildCommand": "next build",
+  "installCommand": "pnpm install",
+  "framework": "nextjs",
+  "regions": ["sfo1"]
+}
