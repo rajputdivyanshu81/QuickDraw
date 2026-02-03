@@ -4,7 +4,7 @@ services:
     env: node
     plan: free
     rootDir: apps/http-backend
-    buildCommand: cd ../.. && npm install && npm run build --workspace=http-backend
+    buildCommand: cd ../.. && npm install --legacy-peer-deps && npm run build --workspace=http-backend
     startCommand: npm start
     envVars:
       - key: DATABASE_URL
@@ -27,7 +27,7 @@ services:
     env: node
     plan: free
     rootDir: apps/ws-backend
-    buildCommand: cd ../.. && npm install && npm run build --workspace=ws-backend
+    buildCommand: cd ../.. && npm install --legacy-peer-deps && npm run build --workspace=ws-backend
     startCommand: npm start
     envVars:
       - key: DATABASE_URL
