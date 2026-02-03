@@ -33,7 +33,7 @@ export default function UnderConstructionPage() {
             Under Construction
           </h1>
           <p className="text-gray-400 text-lg leading-relaxed">
-            We're working hard to bring this feature to life. Check back soon for updates!
+            We&apos;re working hard to bring this feature to life. Check back soon for updates!
           </p>
         </div>
 

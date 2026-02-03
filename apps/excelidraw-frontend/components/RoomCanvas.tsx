@@ -38,8 +38,8 @@ export function RoomCanvas({ roomId }: { roomId: string }) {
                     }));
                 };
 
-                ws.onerror = (e) => {
-                    console.error("WebSocket error:", e);
+                ws.onerror = (_e) => {
+                    console.error("WebSocket error:", _e);
                     setError("Failed to connect to the drawing server. Please try again.");
                 };
                 
@@ -47,7 +47,7 @@ export function RoomCanvas({ roomId }: { roomId: string }) {
                     console.log("Disconnected from server");
                 };
 
-            } catch (e) {
+            } catch {
                 setError("Authentication failed.");
             }
         };

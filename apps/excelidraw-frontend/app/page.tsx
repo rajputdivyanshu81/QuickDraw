@@ -2,18 +2,12 @@
 
 import React from 'react';
 import { 
-  Pencil, 
-  Share2, 
-  Users, 
   Shapes, 
-  Cloud, 
   Sparkles,
   ArrowRight,
-  MousePointer2,
   Zap,
   Shield,
-  Layers,
-  Globe
+  Layers
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { 
@@ -47,16 +41,6 @@ export default function LandingPage() {
       const roomId = Math.floor(Math.random() * 10000);
       router.push(`/canvas/${roomId}`);
     }
-  };
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: { y: 0, opacity: 1 }
   };
 
   return (
@@ -162,7 +146,7 @@ export default function LandingPage() {
                   onClick={() => router.push('/signup')}
                   className="w-full sm:w-auto px-10 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-lg shadow-2xl shadow-indigo-500/20 transition-all transform hover:scale-105 flex items-center justify-center outline-none border-none cursor-pointer"
                 >
-                  Get started — it's free <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
+                  Get started — it&apos;s free <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
                 </button>
               </SignedOut>
               <SignedIn>
@@ -188,6 +172,7 @@ export default function LandingPage() {
           >
             <div className="relative group p-1.5 bg-gradient-to-b from-white/10 to-transparent rounded-[2rem] shadow-[0_0_80px_-15px_rgba(79,70,229,0.3)]">
               <div className="rounded-[1.8rem] overflow-hidden bg-[#0a0a0a] border border-white/10">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
                   src="/hero.png" 
                   alt="DrawFlow Interface" 

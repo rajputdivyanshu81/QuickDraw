@@ -38,7 +38,7 @@ export default function PaymentFailurePage() {
            
            <h1 className="text-4xl font-black">Something went wrong</h1>
            <p className="text-gray-400 font-medium">
-             We couldn't process your payment. This could be due to a bank rejection, insufficient funds, or a network timeout.
+             We couldn&apos;t process your payment. This could be due to a bank rejection, insufficient funds, or a network timeout.
            </p>
         </div>
 

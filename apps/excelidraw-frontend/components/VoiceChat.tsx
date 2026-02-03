@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 // Fixed ICE syntax and added robust STUN servers
-import { Mic, MicOff, Phone, PhoneOff, User, Volume2, Bell, Check, X, PhoneCall } from "lucide-react";
+import { Mic, MicOff, Phone, PhoneOff, User, Volume2, Bell, Check, X } from "lucide-react";
 
 interface Peer {
     id: string;
@@ -28,6 +28,7 @@ export function VoiceChat({ roomId, socket, userId, userName }: VoiceChatProps) 
     const localStreamRef = useRef<MediaStream | null>(null);
     const peersRef = useRef<{ [key: string]: Peer }>({});
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const safeSend = (data: any) => {
         if (socket && socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify(data));
@@ -94,6 +95,7 @@ export function VoiceChat({ roomId, socket, userId, userName }: VoiceChatProps) 
 
         socket.addEventListener("message", handleMessage);
         return () => socket.removeEventListener("message", handleMessage);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [socket, isInVoice, userId, roomId, isRequesting]);
 
     useEffect(() => {
@@ -329,6 +331,7 @@ export function VoiceChat({ roomId, socket, userId, userName }: VoiceChatProps) 
         return pc;
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleVoiceSignal = async (data: any) => {
         const { senderId, signal, senderName } = data;
         let peer = peersRef.current[senderId];

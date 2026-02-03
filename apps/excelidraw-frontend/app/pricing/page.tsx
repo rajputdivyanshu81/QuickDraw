@@ -3,8 +3,6 @@
 import React, { useState } from 'react';
 import { 
   Check, 
-  Zap, 
-  Shield, 
   Sparkles, 
   ArrowRight,
   Loader2,
@@ -53,7 +51,7 @@ export default function PricingPage() {
       // Production: https://secure.payu.in/_payment
       form.action = 'https://test.payu.in/_payment'; 
 
-      const params: any = {
+      const params: Record<string, string> = {
         key: paymentData.key,
         txnid: paymentData.txnid,
         amount: paymentData.amount,
@@ -119,7 +117,7 @@ export default function PricingPage() {
             transition={{ delay: 0.2 }}
             className="text-gray-400 text-lg max-w-2xl mx-auto"
           >
-            Choose the plan that's right for you. Get started for free or unlock
+            Choose the plan that&apos;s right for you. Get started for free or unlock
             unlimited possibilities with our lifetime plan.
           </motion.p>
         </div>
@@ -240,11 +238,11 @@ export default function PricingPage() {
            <div className="grid gap-6 text-left">
               <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
                  <h4 className="font-bold mb-2">How does the lifetime plan work?</h4>
-                 <p className="text-sm text-gray-500">Pay once and your account will be upgraded to Lifetime Subscriber status forever. You'll get all future updates and premium features at no extra cost.</p>
+                 <p className="text-sm text-gray-500">Pay once and your account will be upgraded to Lifetime Subscriber status forever. You&apos;ll get all future updates and premium features at no extra cost.</p>
               </div>
               <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
                  <h4 className="font-bold mb-2">Is the ₹11 price real?</h4>
-                 <p className="text-sm text-gray-500">Yes, it's our special introductory offer to build our community. It will eventually increase, but if you buy now, you're locked in forever.</p>
+                 <p className="text-sm text-gray-500">Yes, it&apos;s our special introductory offer to build our community. It will eventually increase, but if you buy now, you&apos;re locked in forever.</p>
               </div>
            </div>
         </div>
