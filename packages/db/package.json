@@ -8,10 +8,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "db:generate": "prisma generate",
-    "postinstall": "npm run db:generate"
+    "postinstall": "pnpm run db:generate"
   },
   "devDependencies": {
-    "@repo/typescript-config": "*"
+    "@repo/typescript-config": "workspace:*"
   },
   "keywords": [],
   "author": "",

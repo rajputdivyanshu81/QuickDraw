@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.36.8",
-    "@repo/ui": "*",
+    "@repo/ui": "workspace:*",
     "axios": "^1.7.9",
     "framer-motion": "^12.27.5",
     "jspdf": "^4.0.0",
@@ -23,7 +23,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@types/node": "20.17.30",
-    "@types/react": "^19.2.0",
+    "@types/react": "19.1.0",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.1.6",

@@ -5,19 +5,20 @@
   "scripts": {
     "build": "tsc -b",
     "start": "node ./dist/index.js",
-    "dev": "npm run build && node --env-file=.env ./dist/index.js"
+    "dev": "pnpm run build && node --env-file=.env ./dist/index.js"
   },
   "devDependencies": {
-    "@repo/backend-common": "*",
-    "@repo/common": "*",
-    "@repo/typescript-config": "*"
+    "@repo/backend-common": "workspace:*",
+    "@repo/common": "workspace:*",
+    "@repo/typescript-config": "workspace:*"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@clerk/backend": "^2.29.3",
-    "@repo/db": "*",
+    "@repo/db": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/jsonwebtoken": "^9.0.8",
