@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: http-backend
+    env: node
+    plan: free
+    rootDir: apps/http-backend
+    buildCommand: pnpm install && pnpm build
+    startCommand: pnpm start
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: PAYU_MERCHANT_KEY
+        sync: false
+      - key: PAYU_MERCHANT_SALT
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+
+  - type: web
+    name: ws-backend
+    env: node
+    plan: free
+    rootDir: apps/ws-backend
+    buildCommand: pnpm install && pnpm build
+    startCommand: pnpm start
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
