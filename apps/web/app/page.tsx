@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function Home() {
+export default function Home(props: any) {
   const [roomId, setRoomId] = useState("");
   const router = useRouter();
 

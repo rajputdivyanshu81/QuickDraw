@@ -1,14 +1,25 @@
 'use client';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import React from 'react';
 import { 
   Shapes, 
-  Sparkles,
-  ArrowRight,
-  Zap,
+  Sparkles, 
+  Zap, 
+  Users, 
+  ArrowRight, 
+  CheckCircle2, 
+  MousePointer2, 
+  Layout, 
+  Github, 
+  Twitter, 
+  Linkedin,
   Shield,
-  Layers
+  Layers,
+  Sparkle
 } from 'lucide-react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { 
   SignedIn, 
@@ -19,6 +30,19 @@ import {
 import axios from 'axios';
 import { HTTP_BACKEND } from '@/config';
 import { motion, useScroll, useTransform } from 'framer-motion';
+
+// Workaround for Lucide icon type errors in React 19/Next.js 15
+const ShapesIcon = Shapes as any;
+const SparklesIcon = Sparkles as any;
+const ZapIcon = Zap as any;
+const UsersIcon = Users as any;
+const ArrowRightIcon = ArrowRight as any;
+const CheckCircle2Icon = CheckCircle2 as any;
+const MousePointer2Icon = MousePointer2 as any;
+const LayoutIcon = Layout as any;
+const ShieldIcon = Shield as any;
+const LayersIcon = Layers as any;
+const NextImage = Image as any;
 
 export default function LandingPage() {
   const router = useRouter();
@@ -63,7 +87,7 @@ export default function LandingPage() {
               onClick={() => router.push('/')}
             >
               <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20 group-hover:scale-110 transition-transform">
-                <Shapes className="w-6 h-6" />
+                <ShapesIcon className="w-6 h-6" />
               </div>
               <span className="text-2xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
                 DrawFlow
@@ -111,7 +135,7 @@ export default function LandingPage() {
               animate={{ y: 0, opacity: 1 }}
               className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-indigo-400 text-xs font-semibold tracking-wider uppercase mb-4"
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <SparklesIcon className="w-3.5 h-3.5" />
               <span>Collaborative drawing reimagined</span>
             </motion.div>
 
@@ -146,7 +170,7 @@ export default function LandingPage() {
                   onClick={() => router.push('/signup')}
                   className="w-full sm:w-auto px-10 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-lg shadow-2xl shadow-indigo-500/20 transition-all transform hover:scale-105 flex items-center justify-center outline-none border-none cursor-pointer"
                 >
-                  Get started — it&apos;s free <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
+                  Get started — it&apos;s free <ArrowRightIcon className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
                 </button>
               </SignedOut>
               <SignedIn>
@@ -154,7 +178,7 @@ export default function LandingPage() {
                   onClick={handleCreateRoom}
                   className="w-full sm:w-auto px-10 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-lg shadow-2xl shadow-indigo-500/20 transition-all transform hover:scale-105 flex items-center justify-center outline-none border-none cursor-pointer"
                 >
-                  Open new canvas <ArrowRight className="ml-2 w-5 h-5" />
+                  Open new canvas <ArrowRightIcon className="ml-2 w-5 h-5" />
                 </button>
               </SignedIn>
               <button onClick={() => router.push('/pricing')} className="w-full sm:w-auto px-10 py-4 rounded-2xl border border-white/10 hover:bg-white/5 transition-all font-semibold flex items-center justify-center text-gray-300 outline-none cursor-pointer">
@@ -172,7 +196,7 @@ export default function LandingPage() {
           >
             <div className="relative group p-1.5 bg-gradient-to-b from-white/10 to-transparent rounded-[2rem] shadow-[0_0_80px_-15px_rgba(79,70,229,0.3)]">
               <div className="rounded-[1.8rem] overflow-hidden bg-[#0a0a0a] border border-white/10">
-                <Image
+                <NextImage
                   src="/hero.png"
                   alt="DrawFlow Interface"
                   width={1200}
@@ -184,7 +208,7 @@ export default function LandingPage() {
                 <div className="absolute top-8 left-8 p-4 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 hidden md:block">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-indigo-600/20 rounded-lg flex items-center justify-center border border-indigo-500/30">
-                      <Shapes className="w-5 h-5 text-indigo-400" />
+                      <ShapesIcon className="w-8 h-8 text-indigo-500" />
                     </div>
                     <div>
                       <div className="w-16 h-2 bg-white/20 rounded-full mb-1.5" />
@@ -195,12 +219,14 @@ export default function LandingPage() {
                 
                 <div className="absolute bottom-10 right-10 flex flex-col md:flex-row gap-4 hidden lg:flex">
                    <div className="px-5 py-2.5 bg-indigo-600/90 backdrop-blur-xl rounded-xl text-xs font-bold shadow-2xl flex items-center gap-2 border border-white/10">
-                    <Sparkles className="w-3.5 h-3.5" /> High-Performance Engine
+                    <SparklesIcon className="w-3.5 h-3.5" /> High-Performance Engine
                    </div>
                    <div className="px-5 py-2.5 bg-white/5 backdrop-blur-xl rounded-xl text-xs font-bold border border-white/10 flex items-center gap-2 shadow-2xl">
-                    <div className="flex -space-x-2">
-                      {[1, 2, 3].map(i => (
-                        <div key={i} className={`w-6 h-6 rounded-full border-2 border-[#030711] bg-gradient-to-br ${i === 1 ? 'from-indigo-500 to-indigo-700' : i === 2 ? 'from-violet-500 to-violet-700' : 'from-cyan-500 to-cyan-700'}`} />
+                    <div className="flex -space-x-3">
+                      {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="w-10 h-10 rounded-full border-2 border-[#0a0a0a] bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-xs font-bold">
+                          <UsersIcon className="w-4 h-4" />
+                        </div>
                       ))}
                     </div>
                     <span className="ml-1 text-gray-300">4+ designers active</span>
@@ -227,7 +253,7 @@ export default function LandingPage() {
               >
                 <div className="relative z-10 max-w-md">
                    <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-indigo-500/20">
-                     <Zap className="w-6 h-6" />
+                     <ZapIcon className="w-6 h-6" />
                    </div>
                    <h3 className="text-3xl font-bold mb-4">Ultra-low latency <br /> collaboration.</h3>
                    <p className="text-gray-400 font-medium leading-relaxed">Experience zero lag with our proprietary WebSocket engine. See every brush stroke and shape move as it happens.</p>
@@ -235,7 +261,7 @@ export default function LandingPage() {
                 <div className="absolute top-10 -right-20 w-80 h-80 bg-indigo-500/20 blur-[100px] rounded-full group-hover:scale-150 transition-transform" />
                 <div className="mt-12 flex items-center gap-2 text-indigo-400 font-semibold group-hover:gap-4 transition-all">
                   <span>Learn about our sync engine</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRightIcon className="w-4 h-4" />
                 </div>
               </motion.div>
 
@@ -245,7 +271,7 @@ export default function LandingPage() {
                 className="p-8 rounded-3xl bg-white/5 border border-white/10 flex flex-col justify-between group"
               >
                  <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center mb-6">
-                    <Sparkles className="w-6 h-6 text-yellow-500" />
+                    <SparklesIcon className="w-6 h-6 text-yellow-500" />
                  </div>
                  <div>
                     <h3 className="text-xl font-bold mb-2">Infinite canvas</h3>
@@ -259,7 +285,7 @@ export default function LandingPage() {
                 className="p-8 rounded-3xl bg-white/5 border border-white/10 flex flex-col justify-between group"
               >
                  <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center mb-6">
-                    <Shield className="w-6 h-6 text-green-500" />
+                    <ShieldIcon className="w-6 h-6 text-green-500" />
                  </div>
                  <div>
                     <h3 className="text-xl font-bold mb-2">Secure by design</h3>
@@ -274,7 +300,7 @@ export default function LandingPage() {
               >
                 <div className="flex-1 space-y-4">
                    <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center mb-6">
-                     <Layers className="w-6 h-6 text-cyan-400" />
+                     <LayersIcon className="w-6 h-6 text-cyan-400" />
                    </div>
                    <h3 className="text-2xl font-bold">Reusable Components</h3>
                    <p className="text-gray-400 font-medium">Build your own library of custom shapes and components. Drag them into any project instantly.</p>
@@ -331,7 +357,7 @@ export default function LandingPage() {
             <div className="space-y-4 max-w-xs">
                <div className="flex items-center space-x-3">
                  <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-                   <Shapes className="w-5 h-5" />
+                   <ShapesIcon className="w-5 h-5" />
                  </div>
                  <span className="text-xl font-bold">DrawFlow</span>
                </div>

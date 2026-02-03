@@ -5,6 +5,14 @@
       {
         "name": "next"
       }
+    ],
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    },
+    "typeRoots": [
+      "./node_modules/@types"
     ]
   },
   "include": [
