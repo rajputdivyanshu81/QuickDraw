@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
+// Fixed ICE syntax and added robust STUN servers
 import { Mic, MicOff, Phone, PhoneOff, User, Volume2, Bell, Check, X, PhoneCall } from "lucide-react";
 
 interface Peer {
@@ -244,8 +245,15 @@ export function VoiceChat({ roomId, socket, userId, userName }: VoiceChatProps) 
             iceServers: [
                 { urls: "stun:stun.l.google.com:19302" },
                 { urls: "stun:stun1.l.google.com:19302" },
+                { urls: "stun:stun2.l.google.com:19302" },
+                { urls: "stun:stun3.l.google.com:19302" },
+                { urls: "stun:stun4.l.google.com:19302" },
+                // Port 53 is often open for DNS
+                { urls: "stun:stun.l.google.com:53" }, 
+                // Port 19305 is an alternate STUN port
+                { urls: "stun:stun.l.google.com:19305" }
             ],
-            iceCandidatePoolSize: 10
+            iceCandidatePoolSize: 2 // Reduced to avoid network congestion
         });
 
         const peer: Peer = { id: remoteUserId, name: remoteName, pc, status: 'new' };
@@ -280,7 +288,12 @@ export function VoiceChat({ roomId, socket, userId, userName }: VoiceChatProps) 
         };
 
         pc.onicecandidateerror = (event) => {
-            console.error(`ICE Candidate Error with ${remoteName}:`, event.errorCode, event.errorText);
+            // Error 701 is common and often non-fatal (just one candidate failed)
+            if (event.errorCode === 701) {
+                console.warn(`ICE Warning (701) with ${remoteName}: STUN binding timeout (likely a blocked path, harmless if other candidates work).`);
+            } else {
+                console.error(`ICE Candidate Error with ${remoteName}:`, event.errorCode, event.errorText);
+            }
         };
 
         // Handle ICE candidates
