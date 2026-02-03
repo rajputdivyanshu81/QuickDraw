@@ -18,6 +18,8 @@ QuickDraw is a high-performance, real-time collaborative whiteboarding applicati
 
 ---
 
+![alt text](image-1.png)
+
 ## 🛠️ Tech Stack
 
 ### Frontend
