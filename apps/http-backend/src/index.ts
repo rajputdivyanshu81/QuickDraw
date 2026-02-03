@@ -49,7 +49,7 @@ app.post("/room", middleware, async (req: Request, res: Response) => {
 
 app.get("/chats/:roomId", middleware, async (req: Request, res: Response) => {
     try {
-        const roomIdStr = req.params.roomId;
+        const roomIdStr = req.params.roomId as string;
         let roomId = Number(roomIdStr);
 
         if (isNaN(roomId)) {
@@ -87,7 +87,7 @@ app.get("/chats/:roomId", middleware, async (req: Request, res: Response) => {
 })
 
 app.get("/room/:slug", async (req: Request, res: Response) => {
-    const slug = req.params.slug;
+    const slug = req.params.slug as string;
     const room = await prismaClient.room.findFirst({
         where: {
             slug
