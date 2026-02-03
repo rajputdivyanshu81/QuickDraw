@@ -2,6 +2,9 @@
 
 QuickDraw is a high-performance, real-time collaborative whiteboarding application. Built with a modern monorepo architecture, it enables seamless stroke synchronization with ultra-low latency, AI-powered design assistance, and robust room-based collaboration.
 
+### 📖 [**How to Use QuickDraw (Usage Guide)**](USAGE.md)
+
+
 ![alt text](image.png)
 
 ---
