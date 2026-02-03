@@ -183,6 +183,7 @@ export function Canvas({
                 }
             }
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [canvasRef, roomId, socket, dimensions, token]); 
 
     const handleImageUpload = (file: File) => {

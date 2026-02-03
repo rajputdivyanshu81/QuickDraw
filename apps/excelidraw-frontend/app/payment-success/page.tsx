@@ -49,7 +49,7 @@ export default function PaymentSuccessPage() {
               <span>Payment Successful</span>
            </div>
            
-           <h1 className="text-4xl font-black">You're in!</h1>
+           <h1 className="text-4xl font-black">You&apos;re in!</h1>
            <p className="text-gray-400 font-medium">
              Welcome to the elite club. Your **Lifetime Subscription** has been activated successfully.
            </p>

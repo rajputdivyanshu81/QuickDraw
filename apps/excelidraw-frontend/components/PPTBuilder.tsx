@@ -71,11 +71,12 @@ export function PPTBuilder({
                 {slides.length === 0 ? (
                     <div className="text-center text-gray-400 py-8">
                         <p className="text-sm">No slides yet.</p>
-                        <p className="text-xs mt-1">Click "Capture" to add regions.</p>
+                        <p className="text-xs mt-1">Click &quot;Capture&quot; to add regions.</p>
                     </div>
                 ) : (
                     slides.map((slide, index) => (
                         <div key={slide.id} className="relative group bg-gray-100 rounded-md p-2 border border-gray-200">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={slide.image} alt={`Slide ${index + 1}`} className="w-full h-24 object-contain bg-white rounded" />
                             <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button 
