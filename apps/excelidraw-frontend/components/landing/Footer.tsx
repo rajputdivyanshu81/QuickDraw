@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Footer() {
   return (
     <footer>
@@ -9,14 +11,14 @@ export default function Footer() {
 
         <div className="footer-card">
           <div>
-            <a href="/" className="footer-logo-pill">
+            <Link href="/" className="footer-logo-pill">
               <svg width="22" height="22" viewBox="0 0 26 26" fill="none">
                 <rect width="26" height="26" rx="7" fill="#0f0520" />
                 <path d="M7 18 Q13 6 19 13 Q13 19 7 13" stroke="#a78bfa" strokeWidth="2" fill="none" strokeLinecap="round" />
                 <circle cx="19" cy="9" r="2.5" fill="#f97316" />
               </svg>
               QuickDraw
-            </a>
+            </Link>
             <div className="footer-preview">
               <svg viewBox="0 0 220 60" style={{ width: "100%", height: "100%" }}>
                 <defs>

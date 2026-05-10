@@ -2,20 +2,21 @@
 
 import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function Navbar() {
   const router = useRouter();
 
   return (
     <div className="nav-wrap">
-      <a href="/" className="nav-pill nav-logo-pill" style={{ display: "flex" }}>
+      <Link href="/" className="nav-pill nav-logo-pill" style={{ display: "flex" }}>
         <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
           <rect width="26" height="26" rx="7" fill="#0f0520" />
           <path d="M7 18 Q13 6 19 13 Q13 19 7 13" stroke="#a78bfa" strokeWidth="2" fill="none" strokeLinecap="round" />
           <circle cx="19" cy="9" r="2.5" fill="#f97316" />
         </svg>
         QuickDraw
-      </a>
+      </Link>
 
       <div className="nav-pill nav-links-pill">
         <a href="#features">Why QuickDraw</a>
