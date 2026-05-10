@@ -18,7 +18,25 @@ export function Toolbar({ selectedTool, onSelect, selectedColor, onColorSelect, 
 
     const shareCanvas = async () => {
         try {
-            await navigator.clipboard.writeText(window.location.href);
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(window.location.href);
+            } else {
+                // Fallback for non-HTTPS (like local network IP)
+                const textArea = document.createElement("textarea");
+                textArea.value = window.location.href;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-999999px";
+                textArea.style.top = "-999999px";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                } catch (err) {
+                    console.error('Fallback: Oops, unable to copy', err);
+                }
+                document.body.removeChild(textArea);
+            }
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         } catch (err) {
