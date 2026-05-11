@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Cpu, Zap, Database, MessageSquare, Sparkles } from 'lucide-react';
+import { Cpu, Zap, Database, Sparkles } from 'lucide-react';
 
 export default function ArchitecturePage() {
   const container = {
@@ -67,7 +67,7 @@ export default function ArchitecturePage() {
       <div className="space-y-8">
         <h2 className="text-3xl font-black tracking-tight">Data Propagation</h2>
         <p className="text-lg text-gray-500 leading-relaxed">
-          Stroke data is propagated using a "broadcast-first" strategy. As soon as the server 
+          Stroke data is propagated using a &quot;broadcast-first&quot; strategy. As soon as the server 
           receives a packet, it is immediately emitted to all other connected clients before 
           being queued for database persistence.
         </p>

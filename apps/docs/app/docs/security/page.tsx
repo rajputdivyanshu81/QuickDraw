@@ -30,7 +30,7 @@ export default function SecurityPage() {
       <h1 className="gradient-text">Security & Privacy</h1>
       <p>
         At QuickDraw, the security and privacy of your collaborative work are our top priorities. 
-        We've implemented multi-layered security measures to ensure your data stays yours.
+        We&apos;ve implemented multi-layered security measures to ensure your data stays yours.
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-12 not-prose">

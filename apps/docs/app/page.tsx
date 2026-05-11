@@ -8,10 +8,7 @@ import {
   Terminal, 
   Cpu, 
   Users, 
-  ShieldCheck, 
   Sparkles,
-  Zap,
-  Layout,
   Layers,
   Github
 } from 'lucide-react';
@@ -76,7 +73,7 @@ export default function DocsHome() {
                 <span className="text-purple-600">QuickDraw.</span>
               </h1>
               <p className="text-xl md:text-2xl text-gray-500 leading-relaxed max-w-2xl font-medium">
-                Deep dive into the architecture, protocols, and APIs that power the world's fastest collaborative whiteboarding engine.
+                Deep dive into the architecture, protocols, and APIs that power the world&apos;s fastest collaborative whiteboarding engine.
               </p>
               <div className="flex flex-wrap gap-5 pt-4">
                 <Link 
@@ -132,7 +129,7 @@ export default function DocsHome() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {categories.map((cat, idx) => (
+          {categories.map((cat) => (
             <Link 
               key={cat.href}
               href={cat.href}
