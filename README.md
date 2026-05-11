@@ -1,3 +1,8 @@
+[![CI](https://github.com/rajputdivyanshu81/QuickDraw/actions/workflows/ci.yml/badge.svg)](https://github.com/rajputdivyanshu81/QuickDraw/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Discussions](https://img.shields.io/github/discussions/rajputdivyanshu81/QuickDraw)](https://github.com/rajputdivyanshu81/QuickDraw/discussions)
+[![Contributors](https://img.shields.io/github/contributors/rajputdivyanshu81/QuickDraw)](https://github.com/rajputdivyanshu81/QuickDraw/graphs/contributors)
+
 # QuickDraw 🎨 ⚡
 
 [![CI](https://github.com/rajputdivyanshu81/QuickDraw/actions/workflows/ci.yml/badge.svg)](https://github.com/rajputdivyanshu81/QuickDraw/actions/workflows/ci.yml)
