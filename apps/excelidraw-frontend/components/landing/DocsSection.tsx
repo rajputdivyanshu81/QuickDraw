@@ -4,30 +4,31 @@ import React from "react";
 import { Book, Code, Shield, Terminal } from "lucide-react";
 
 export default function DocsSection() {
+  const docsUrl = process.env.NEXT_PUBLIC_DOCS_URL || "/docs";
   const docs = [
     {
       title: "API Reference",
       desc: "Full documentation for REST and WebSocket endpoints.",
       icon: <Terminal size={20} className="text-purple-500" />,
-      link: "http://localhost:3006/docs/api/http"
+      link: `${docsUrl}/docs/api/http`
     },
     {
       title: "Architecture",
       desc: "Deep dive into our ultra-low latency sync engine.",
       icon: <Code size={20} className="text-blue-500" />,
-      link: "http://localhost:3006/docs/architecture"
+      link: `${docsUrl}/docs/architecture`
     },
     {
       title: "Contributing",
       desc: "Guidelines for setting up the monorepo and PRs.",
       icon: <Book size={20} className="text-orange-500" />,
-      link: "http://localhost:3006/docs/contributing"
+      link: `${docsUrl}/docs/contributing`
     },
     {
       title: "Security",
       desc: "How we keep your collaborative data safe and secure.",
       icon: <Shield size={20} className="text-green-500" />,
-      link: "http://localhost:3006/docs/security"
+      link: `${docsUrl}/docs/security`
     }
   ];
 
@@ -63,7 +64,7 @@ export default function DocsSection() {
 
       <div className="text-center mt-12">
         <a 
-          href="http://localhost:3006" 
+          href={docsUrl} 
           className="btn-white"
           style={{ border: "1.5px solid var(--purple-mid)", color: "var(--purple-mid)", boxShadow: "none" }}
         >
