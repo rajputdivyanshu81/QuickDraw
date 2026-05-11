@@ -14,6 +14,7 @@ import AISection from "@/components/landing/AISection";
 import OpenSourceSection from "@/components/landing/OpenSourceSection";
 import TestimonialsSection from "@/components/landing/TestimonialsSection";
 import ScheduleSection from "@/components/landing/ScheduleSection";
+import DocsSection from "@/components/landing/DocsSection";
 import CTASection from "@/components/landing/CTASection";
 import Footer from "@/components/landing/Footer";
 
@@ -28,6 +29,7 @@ export default function LandingPage() {
         <HowSection />
         <ShipFastSection />
         <AISection />
+        <DocsSection />
         <OpenSourceSection />
         <TestimonialsSection />
         <ScheduleSection />
