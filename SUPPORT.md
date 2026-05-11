@@ -18,7 +18,7 @@ If you need to report a security vulnerability, please refer to our [**Security 
 
 ## 📧 Direct Contact
 For private inquiries or partnership requests, you can reach out to the project maintainer directly at:
-- **Email**: [INSERT EMAIL]
+- **Email**: [divyanshurajput552@gmail.com]
 
 ---
 Thank you for being part of the QuickDraw community!
