@@ -7,6 +7,10 @@
 
 [![CI](https://github.com/rajputdivyanshu81/QuickDraw/actions/workflows/ci.yml/badge.svg)](https://github.com/rajputdivyanshu81/QuickDraw/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
+[![Built with Turbo](https://img.shields.io/badge/built%20with-turbo-000.svg?style=flat-square&logo=turborepo)](https://turbo.build/repo)
+[![pnpm](https://img.shields.io/badge/maintained%20with-pnpm-cc3534.svg?style=flat-square&logo=pnpm)](https://pnpm.io/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
 QuickDraw is a high-performance, real-time collaborative whiteboarding application. Built with a modern monorepo architecture, it enables seamless stroke synchronization with ultra-low latency, AI-powered design assistance, and robust room-based collaboration.
 
