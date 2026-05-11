@@ -1,26 +1,259 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --bg: #ffffff;
+  --ink: #0f0a1e;
+  --ink2: #374151;
+  --muted: #6b7280;
+  --purple: #5b21b6;
+  --purple-mid: #7c3aed;
+  --purple-light: #a78bfa;
+  --purple-pale: #ede9fe;
+  --purple-faint: #f5f3ff;
+  --orange: #f97316;
+  --border: rgba(0,0,0,0.08);
+  --border-purple: rgba(139,92,246,0.15);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* ── SIDE LINES ── */
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(to bottom, transparent 0%, rgba(139,92,246,0.12) 10%, rgba(139,92,246,0.08) 90%, transparent 100%);
+  z-index: 100;
+  pointer-events: none;
+}
+body::before { left: clamp(16px, 4vw, 60px); }
+body::after { right: clamp(16px, 4vw, 60px); }
+
+/* ── CORNER DOTS ── */
+.corner-dots {
+  position: relative;
+}
+.corner-dots::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  background: rgba(0,0,0,0.02);
+  border: 1px solid rgba(0,0,0,0.04);
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 0;
+  background: 
+    radial-gradient(circle at 3px 3px, #6b7280 2.5px, transparent 2.5px) 0% 0% / 6px 6px no-repeat,
+    radial-gradient(circle at 3px 3px, #6b7280 2.5px, transparent 2.5px) 100% 0% / 6px 6px no-repeat,
+    radial-gradient(circle at 3px 3px, #6b7280 2.5px, transparent 2.5px) 0% 100% / 6px 6px no-repeat,
+    radial-gradient(circle at 3px 3px, #6b7280 2.5px, transparent 2.5px) 100% 100% / 6px 6px no-repeat,
+    rgba(0,0,0,0.02);
+}
+
+/* ── NAV PILLS (from landing.css) ── */
+.nav-pill {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 60px;
+  display: flex;
+  align-items: center;
+  position: relative;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  z-index: 10;
+}
+
+.nav-pill::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  border: 1px solid rgba(0,0,0,0.04);
+  border-radius: 4px; /* Rectangular corners */
+  pointer-events: none;
+  background: 
+    radial-gradient(circle at 3px 3px, #6b7280 2.5px, transparent 2.5px) 0% 0% / 6px 6px no-repeat,
+    radial-gradient(circle at 3px 3px, #6b7280 2.5px, transparent 2.5px) 100% 0% / 6px 6px no-repeat,
+    radial-gradient(circle at 3px 3px, #6b7280 2.5px, transparent 2.5px) 0% 100% / 6px 6px no-repeat,
+    radial-gradient(circle at 3px 3px, #6b7280 2.5px, transparent 2.5px) 100% 100% / 6px 6px no-repeat,
+    rgba(0,0,0,0.02); /* This is the "shade" */
+}
+
+/* ── CROSSHAIR LINES (Margin lines) ── */
+.nav-pill::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -2000px;
+  right: -2000px;
+  height: 1px;
+  background-image: 
+    linear-gradient(to right, transparent, rgba(0,0,0,0.03) 50%, rgba(0,0,0,0.03) 100%),
+    linear-gradient(to left, transparent, rgba(0,0,0,0.03) 50%, rgba(0,0,0,0.03) 100%);
+  background-position: left center, right center;
+  background-size: calc(2000px - 8px) 1px;
+  background-repeat: no-repeat;
+  z-index: -2;
+  pointer-events: none;
+}
+
+/* Vertical crosshair for pills */
+.nav-links-pill::after,
+.nav-logo-pill::after,
+.nav-cta-pill::after {
+  content: '';
+  position: absolute;
+  top: -2000px;
+  bottom: -2000px;
+  left: 50%;
+  width: 1px;
+  background-image: 
+    linear-gradient(to bottom, transparent, rgba(0,0,0,0.03) 50%, rgba(0,0,0,0.03) 100%),
+    linear-gradient(to top, transparent, rgba(0,0,0,0.03) 50%, rgba(0,0,0,0.03) 100%);
+  background-position: top center, bottom center;
+  background-size: 1px calc(2000px - 8px);
+  background-repeat: no-repeat;
+  z-index: -2;
+  pointer-events: none;
+}
+
+.nav-cta-pill {
+  background: linear-gradient(135deg, #3b0764, #6d28d9);
+  padding: 10px 22px;
+  border-radius: 60px;
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 4px 18px rgba(109,40,217,0.4);
+  transition: all 0.2s;
+  position: relative;
+  z-index: 1;
+}
+
+.nav-cta-pill::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  background: rgba(109,40,217,0.03);
+  border: 1px solid rgba(109,40,217,0.1);
+  border-radius: 4px;
+  pointer-events: none;
+  background: 
+    radial-gradient(circle at 3px 3px, rgba(124,58,237,1) 2.5px, transparent 2.5px) 0% 0% / 6px 6px no-repeat,
+    radial-gradient(circle at 3px 3px, rgba(124,58,237,1) 2.5px, transparent 2.5px) 100% 0% / 6px 6px no-repeat,
+    radial-gradient(circle at 3px 3px, rgba(124,58,237,1) 2.5px, transparent 2.5px) 0% 100% / 6px 6px no-repeat,
+    radial-gradient(circle at 3px 3px, rgba(124,58,237,1) 2.5px, transparent 2.5px) 100% 100% / 6px 6px no-repeat,
+    rgba(109,40,217,0.03);
+}
+
+.nav-cta-pill:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.nav-cta-orb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, #f97316, #a855f7, #f97316);
+  animation: spin 4s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── BENTO CARDS ── */
+.bcard {
+  background: #fff;
+  border: 1.5px solid rgba(0,0,0,0.07);
+  border-radius: 24px;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.bcard:hover {
+  box-shadow: 0 20px 60px rgba(109,40,217,0.09);
+  transform: translateY(-3px);
+  border-color: rgba(109,40,217,0.2);
+}
+
+/* ── PROSE (revamped) ── */
+.prose h1 {
+  font-size: clamp(40px, 5vw, 64px);
+  font-weight: 800;
+  line-height: 1.06;
+  letter-spacing: -0.03em;
+  margin-bottom: 2rem;
+  color: var(--ink);
+}
+
+.prose h2 {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-top: 4rem;
+  margin-bottom: 1.5rem;
+  color: var(--ink);
+}
+
+.prose p {
+  font-size: 17px;
+  line-height: 1.7;
+  color: #4b5563;
+  margin-bottom: 1.5rem;
+}
+
+.prose code {
+  background: var(--purple-faint);
+  color: var(--purple-mid);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.9em;
+}
+
+.prose pre {
+  background: #0f0520;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  padding: 2rem;
+  margin: 2.5rem 0;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+}
+
+.wf-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(109,40,217,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(109,40,217,0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* Animations */
+.animate-fade-in {
+  animation: fadeIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }

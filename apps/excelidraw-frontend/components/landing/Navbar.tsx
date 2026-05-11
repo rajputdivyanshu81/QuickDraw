@@ -21,7 +21,7 @@ export default function Navbar() {
       <div className="nav-pill nav-links-pill">
         <a href="#features">Why QuickDraw</a>
         <a href="#technology">Technology</a>
-        <a href="#teams">For Teams</a>
+        <a href="http://localhost:3006">Docs</a>
       </div>
 
       <SignedOut>
