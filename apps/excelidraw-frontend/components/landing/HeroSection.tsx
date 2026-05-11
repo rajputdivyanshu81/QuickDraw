@@ -27,6 +27,22 @@ export default function HeroSection() {
     }
   };
 
+  const handleJoinRoom = () => {
+    if (!roomId) return;
+    
+    let cleanId = roomId.trim();
+    // If a full URL is pasted, extract the ID after /canvas/
+    if (cleanId.includes("/canvas/")) {
+      cleanId = cleanId.split("/canvas/").pop() || cleanId;
+    }
+    // Remove any trailing slashes or query params
+    cleanId = cleanId.split("/")[0].split("?")[0];
+
+    if (cleanId) {
+      router.push(`/canvas/${cleanId}`);
+    }
+  };
+
   return (
     <section className="hero">
       <div className="hero-badge">
@@ -54,15 +70,15 @@ export default function HeroSection() {
                 value={roomId}
                 onChange={(e) => setRoomId(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && roomId) {
-                    router.push(`/canvas/${roomId}`);
+                  if (e.key === "Enter") {
+                    handleJoinRoom();
                   }
                 }}
               />
               <button
                 onClick={() => {
                   if (roomId) {
-                    router.push(`/canvas/${roomId}`);
+                    handleJoinRoom();
                   } else {
                     handleCreateRoom();
                   }
