@@ -16,7 +16,7 @@
     "@repo/ui": "workspace:*",
     "axios": "^1.7.9",
     "framer-motion": "^12.27.5",
-    "jspdf": "^4.0.0",
+    "jspdf": "^4.2.1",
     "lucide-react": "^0.475.0",
     "next": "^15.5.11",
     "react": "^19.0.0",
