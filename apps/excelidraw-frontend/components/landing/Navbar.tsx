@@ -21,7 +21,7 @@ export default function Navbar() {
       <div className="nav-pill nav-links-pill">
         <a href="#features">Why QuickDraw</a>
         <a href="#technology">Technology</a>
-        <a href="http://localhost:3006">Docs</a>
+        <a href={process.env.NEXT_PUBLIC_DOCS_URL || "/docs"}>Docs</a>
       </div>
 
       <SignedOut>
