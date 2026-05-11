@@ -14,6 +14,8 @@
 
 QuickDraw is a high-performance, real-time collaborative whiteboarding application. Built with a modern monorepo architecture, it enables seamless stroke synchronization with ultra-low latency, AI-powered design assistance, and robust room-based collaboration.
 
+**🌐 Live Demo: [quick-draw-excelidraw-frontend.vercel.app](https://quick-draw-excelidraw-frontend.vercel.app)**
+
 ![Hero Section](hero.png)
 
 ### 📖 Resources
