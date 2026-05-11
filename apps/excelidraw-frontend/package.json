@@ -14,7 +14,7 @@
   "dependencies": {
     "@clerk/nextjs": "^6.36.8",
     "@repo/ui": "workspace:*",
-    "axios": "^1.7.9",
+    "axios": "^1.15.2",
     "framer-motion": "^12.27.5",
     "jspdf": "^4.0.0",
     "lucide-react": "^0.475.0",
