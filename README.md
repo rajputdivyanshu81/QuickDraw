@@ -5,6 +5,8 @@
 
 QuickDraw is a high-performance, real-time collaborative whiteboarding application. Built with a modern monorepo architecture, it enables seamless stroke synchronization with ultra-low latency, AI-powered design assistance, and robust room-based collaboration.
 
+![Hero Section](hero.png)
+
 ### 📖 Resources
 - [**Usage Guide**](USAGE.md) - How to get the most out of QuickDraw.
 - [**Contributing Guide**](CONTRIBUTING.md) - How to set up locally and contribute code.
@@ -12,21 +14,20 @@ QuickDraw is a high-performance, real-time collaborative whiteboarding applicati
 
 ---
 
-![Overview](image.png)
-
 ## 🚀 Features
 
 - **Real-Time Collaboration**: Stroke synchronization (approx. 50ms latency) using WebSockets.
-- **Private Drawing Rooms**: Create and join unique rooms for focused group brainstorming.
 - **AI Integration**: Built-in AI chat powered by Groq (Llama 3.3) for design assistance.
+- **Private Drawing Rooms**: Create and join unique rooms for focused group brainstorming.
+
+![Collaboration and AI](collaboration.png)
+
 - **PPT Export**: Export your whiteboard designs directly to PowerPoint presentations.
 - **Modern Auth**: Secure user management and authentication powered by Clerk.
 - **Responsive UI**: High-performance interface built with Next.js 15 and Tailwind CSS.
 - **Monorepo Architecture**: Efficient code sharing and task orchestration via TurboRepo.
 
 ---
-
-![Interface](image-1.png)
 
 ## 🛠️ Tech Stack
 
@@ -35,6 +36,25 @@ QuickDraw is a high-performance, real-time collaborative whiteboarding applicati
 - **Database**: PostgreSQL with Prisma ORM.
 - **AI**: Groq API (Llama 3.3).
 - **Tooling**: TurboRepo, pnpm, Docker.
+
+---
+
+## ⚙️ How it Works
+
+![Workflow](how_it_works.png)
+
+Detailed instructions are available in the [**Contributing Guide**](CONTRIBUTING.md).
+
+```bash
+# 1. Install dependencies
+pnpm install
+
+# 2. Setup database
+pnpm db:generate
+
+# 3. Start development
+pnpm dev
+```
 
 ## 📂 Project Structure
 
@@ -50,21 +70,6 @@ QuickDraw/
 │   ├── common/               # Shared Zod schemas and TypeScript types
 │   ├── ui/                   # Shared React component library
 │   └── eslint-config/        # Shared ESLint configurations
-```
-
-## ⚙️ Quick Start
-
-Detailed instructions are available in the [**Contributing Guide**](CONTRIBUTING.md).
-
-```bash
-# 1. Install dependencies
-pnpm install
-
-# 2. Setup database
-pnpm db:generate
-
-# 3. Start development
-pnpm dev
 ```
 
 ## 🤝 Contributing
