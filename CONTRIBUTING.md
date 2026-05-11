@@ -7,7 +7,7 @@ This guide outlines the process for contributing to the QuickDraw project.
 ### Prerequisites
 - Node.js: Use version 20 or 22
 - pnpm: Version 9.x is required for monorepo management
-- Docker: Optional, used for running the local database
+- Docker & Docker Compose: For running the local database and infrastructure
 
 ### Local Setup
 1. Clone the repository:
@@ -21,8 +21,9 @@ This guide outlines the process for contributing to the QuickDraw project.
    pnpm install
    ```
 
-3. Database Setup:
+3. Database Setup (Local Docker):
    ```bash
+   docker-compose up -d
    pnpm db:generate
    ```
 
