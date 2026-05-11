@@ -6,7 +6,9 @@
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "check-types": "tsc --noEmit",
+    "test": "echo \"No tests yet\""
   },
   "dependencies": {
     "@clerk/nextjs": "^6.36.8",
