@@ -19,8 +19,8 @@ QuickDraw is a high-performance, real-time collaborative whiteboarding applicati
 ![Hero Section](hero.png)
 
 ### 📖 Resources
-- [**Documentation**](http://localhost:3006) - Comprehensive guides, API reference, and architecture.
-- [**Contributing Guide**](http://localhost:3006/docs/contributing) - How to set up locally and contribute code.
+- [**Documentation**](./apps/docs) - Comprehensive guides, API reference, and architecture.
+- [**Contributing Guide**](./apps/docs/app/docs/contributing) - How to set up locally and contribute code.
 - [**Discussions**](https://github.com/rajputdivyanshu81/QuickDraw/discussions) - Connect with the community and share ideas.
 
 ---
