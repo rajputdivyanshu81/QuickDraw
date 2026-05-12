@@ -5,6 +5,7 @@ import { prismaClient } from '@repo/db/client';
 import cors from "cors";
 import PptxGenJS from "pptxgenjs";
 import dotenv from "dotenv";
+import rateLimit from "express-rate-limit";
 import { generatePaymentHash, verifyPaymentResponse } from './payment.js';
 
 dotenv.config();
@@ -12,6 +13,13 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+const paymentCallbackLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 60,
+    standardHeaders: true,
+    legacyHeaders: false
+});
 app.use(cors());
 
 console.log("HTTP Backend starting...");
@@ -224,7 +232,7 @@ app.post("/api/create-payment", middleware, async (req: Request, res: Response) 
     }
 });
 
-app.post("/api/payment-callback", async (req: Request, res: Response) => {
+app.post("/api/payment-callback", paymentCallbackLimiter, async (req: Request, res: Response) => {
     const payuData = req.body;
 
     if (!process.env.PAYU_MERCHANT_SALT) {
