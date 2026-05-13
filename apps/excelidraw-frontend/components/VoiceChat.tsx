@@ -272,7 +272,7 @@ export function VoiceChat({ roomId, socket, userId, userName }: VoiceChatProps) 
 
         // Handle remote stream
         pc.ontrack = (event) => {
-            console.log(`Received remote track from ${remoteName}`, event.streams);
+            console.log("Received remote track from %s", remoteName, event.streams);
             // Fallback for browsers that don't provide streams[0]
             const stream = event.streams[0] || new MediaStream([event.track]);
             peer.stream = stream;
