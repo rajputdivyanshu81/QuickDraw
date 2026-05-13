@@ -294,7 +294,7 @@ export function VoiceChat({ roomId, socket, userId, userName }: VoiceChatProps) 
             if (event.errorCode === 701) {
                 console.warn(`ICE Warning (701) with ${remoteName}: STUN binding timeout (likely a blocked path, harmless if other candidates work).`);
             } else {
-                console.error(`ICE Candidate Error with ${remoteName}:`, event.errorCode, event.errorText);
+                console.error("ICE Candidate Error with %s:", remoteName, event.errorCode, event.errorText);
             }
         };
 
