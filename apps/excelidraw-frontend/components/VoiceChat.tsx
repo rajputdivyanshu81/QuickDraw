@@ -286,7 +286,7 @@ export function VoiceChat({ roomId, socket, userId, userName }: VoiceChatProps) 
         };
 
         pc.onconnectionstatechange = () => {
-            console.log(`Connection State with ${remoteName}:`, pc.connectionState);
+            console.log("Connection State with %s:", remoteName, pc.connectionState);
         };
 
         pc.onicecandidateerror = (event) => {
