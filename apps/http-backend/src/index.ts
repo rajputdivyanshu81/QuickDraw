@@ -5,11 +5,19 @@ import { prismaClient } from '@repo/db/client';
 import cors from "cors";
 import PptxGenJS from "pptxgenjs";
 import dotenv from "dotenv";
+import rateLimit from "express-rate-limit";
 import { generatePaymentHash, verifyPaymentResponse } from './payment.js';
 
 dotenv.config();
 
 const app = express();
+const createPaymentLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: "Too many payment requests, please try again later." }
+});
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
@@ -173,7 +181,7 @@ app.post("/generate-ppt", async (req: Request, res: Response) => {
     }
 });
 
-app.post("/api/create-payment", middleware, async (req: Request, res: Response) => {
+app.post("/api/create-payment", createPaymentLimiter, middleware, async (req: Request, res: Response) => {
     // @ts-ignore
     const userId = req.userId;
     const { amount, productInfo, firstName, email } = req.body;
