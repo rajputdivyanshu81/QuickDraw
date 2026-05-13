@@ -6,6 +6,7 @@ import cors from "cors";
 import PptxGenJS from "pptxgenjs";
 import dotenv from "dotenv";
 import { generatePaymentHash, verifyPaymentResponse } from './payment.js';
+import rateLimit from 'express-rate-limit';
 
 dotenv.config();
 
@@ -13,6 +14,13 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
+
+const chatsRateLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 60,
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
 console.log("HTTP Backend starting...");
 console.log("CLERK_SECRET_KEY present:", !!process.env.CLERK_SECRET_KEY);
@@ -47,7 +55,7 @@ app.post("/room", middleware, async (req: Request, res: Response) => {
     }
 })
 
-app.get("/chats/:roomId", middleware, async (req: Request, res: Response) => {
+app.get("/chats/:roomId", chatsRateLimiter, middleware, async (req: Request, res: Response) => {
     try {
         const roomIdStr = req.params.roomId as string;
         let roomId = Number(roomIdStr);
