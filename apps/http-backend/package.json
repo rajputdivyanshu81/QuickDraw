@@ -29,7 +29,8 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
-    "pptxgenjs": "^4.0.1"
+    "pptxgenjs": "^4.0.1",
+    "express-rate-limit": "^8.5.1"
   },
   "description": "",
   "engines": {
