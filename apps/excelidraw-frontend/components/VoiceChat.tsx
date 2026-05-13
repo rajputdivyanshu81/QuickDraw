@@ -280,7 +280,7 @@ export function VoiceChat({ roomId, socket, userId, userName }: VoiceChatProps) 
         };
 
         pc.oniceconnectionstatechange = () => {
-            console.log(`ICE State with ${remoteName}:`, pc.iceConnectionState);
+            console.log("ICE State with %s: %s", remoteName, pc.iceConnectionState);
             peer.status = pc.iceConnectionState;
             setPeers({ ...peersRef.current });
         };
