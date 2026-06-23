@@ -10,8 +10,8 @@ import { generatePaymentHash, verifyPaymentResponse } from './payment.js';
 dotenv.config();
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(cors());
 
 console.log("HTTP Backend starting...");
@@ -145,11 +145,114 @@ app.post("/generate-ppt", async (req: Request, res: Response) => {
         }
 
         const pres = new PptxGenJS();
+        pres.layout = "LAYOUT_16x9"; // 10 x 5.625 inches
 
-        slides.forEach((slideData: { image: string }, index: number) => {
+        slides.forEach((slideData: any) => {
             const slide = pres.addSlide();
-            // Handle base64 image data
-            if (slideData.image) {
+
+            if (slideData.elements && Array.isArray(slideData.elements) && slideData.elements.length > 0) {
+                const captureW = slideData.width || 800;
+                const captureH = slideData.height || 600;
+                const scaleX = 10 / captureW;      // inches per pixel
+                const scaleY = 5.625 / captureH;   // inches per pixel
+                const shapeFill = slideData.bgColor 
+                    ? { color: slideData.bgColor.replace("#", "") } 
+                    : { color: "ffffff" };
+
+                if (slideData.bgColor) {
+                    slide.background = { color: slideData.bgColor.replace("#", "") };
+                }
+
+                if (slideData.pencilImage) {
+                    slide.addImage({
+                        data: slideData.pencilImage,
+                        x: 0, y: 0, w: 10, h: 5.625,
+                    });
+                }
+
+                for (const el of slideData.elements) {
+                    const color = (el.color || "ffffff").replace("#", "");
+
+                    switch (el.type) {
+                        case "rect":
+                            slide.addShape(pres.ShapeType.rect, {
+                                x: el.x * scaleX,
+                                y: el.y * scaleY,
+                                w: el.width * scaleX,
+                                h: el.height * scaleY,
+                                line: { color, width: 1.5 },
+                                fill: shapeFill,
+                            });
+                            break;
+                        case "circle":
+                            slide.addShape(pres.ShapeType.ellipse, {
+                                x: (el.centerX - el.radius) * scaleX,
+                                y: (el.centerY - el.radius) * scaleY,
+                                w: el.radius * 2 * scaleX,
+                                h: el.radius * 2 * scaleY,
+                                line: { color, width: 1.5 },
+                                fill: shapeFill,
+                            });
+                            break;
+                        case "line":
+                            const lx = Math.min(el.startX, el.endX);
+                            const ly = Math.min(el.startY, el.endY);
+                            const lw = Math.abs(el.endX - el.startX);
+                            const lh = Math.abs(el.endY - el.startY);
+                            slide.addShape(pres.ShapeType.line, {
+                                x: lx * scaleX,
+                                y: ly * scaleY,
+                                w: lw * scaleX,
+                                h: lh * scaleY,
+                                line: { color, width: 1.5 },
+                                flipV: (el.startX < el.endX) !== (el.startY < el.endY),
+                            });
+                            break;
+                        case "text":
+                            slide.addText(el.text, {
+                                x: el.x * scaleX,
+                                y: (el.y - 20) * scaleY,
+                                w: Math.max((el.text.length * 12) * scaleX, 1),
+                                h: 0.4,
+                                fontSize: 15,
+                                fontFace: "Arial",
+                                color: color,
+                                autoFit: true,
+                            });
+                            break;
+                        case "image":
+                            slide.addImage({
+                                data: el.data,
+                                x: el.x * scaleX,
+                                y: el.y * scaleY,
+                                w: el.width * scaleX,
+                                h: el.height * scaleY,
+                            });
+                            break;
+                        case "pencil":
+                            if (el.points && el.points.length >= 2) {
+                                for (let i = 0; i < el.points.length - 1; i++) {
+                                    const p1 = el.points[i];
+                                    const p2 = el.points[i + 1];
+                                    const lx = Math.min(p1.x, p2.x);
+                                    const ly = Math.min(p1.y, p2.y);
+                                    const lw = Math.abs(p2.x - p1.x);
+                                    const lh = Math.abs(p2.y - p1.y);
+                                    slide.addShape(pres.ShapeType.line, {
+                                        x: lx * scaleX,
+                                        y: ly * scaleY,
+                                        w: Math.max(lw, 0.1) * scaleX,
+                                        h: Math.max(lh, 0.1) * scaleY,
+                                        line: { color, width: 1.5 },
+                                        flipV: (p1.x < p2.x) !== (p1.y < p2.y),
+                                    });
+                                }
+                            }
+                            break;
+                    }
+                }
+            } else if (slideData.image) {
+                // Fallback to old behavior
                 slide.addImage({
                     data: slideData.image,
                     x: "10%",
