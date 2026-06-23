@@ -6,6 +6,11 @@ import { HTTP_BACKEND } from "@/config";
 interface Slide {
     id: string;
     image: string; // base64
+    elements?: any[];
+    pencilImage?: string | null;
+    width?: number;
+    height?: number;
+    bgColor?: string;
 }
 
 export function PPTBuilder({ 
@@ -28,7 +33,14 @@ export function PPTBuilder({
         setGenerating(true);
         try {
             const response = await axios.post(`${HTTP_BACKEND}/generate-ppt`, {
-                slides: slides.map(s => ({ image: s.image }))
+                slides: slides.map(s => ({
+                    image: s.image,
+                    elements: s.elements,
+                    pencilImage: s.pencilImage,
+                    width: s.width,
+                    height: s.height,
+                    bgColor: s.bgColor
+                }))
             }, {
                 responseType: 'arraybuffer'
             });

@@ -111,10 +111,21 @@ export function Canvas({
     }, [backgroundColor]);
 
     const [pptOpen, setPptOpen] = useState(false);
-    const [slides, setSlides] = useState<{ id: string, image: string }[]>([]);
+    const [slides, setSlides] = useState<{
+        id: string;
+        image: string;
+        elements: any[];
+        pencilImage: string | null;
+        width: number;
+        height: number;
+        bgColor: string;
+    }[]>([]);
 
-    const handleCapture = (image: string) => {
-        setSlides(prev => [...prev, { id: Math.random().toString(36), image }]);
+    const handleCapture = (captureData: {
+        image: string; elements: any[]; pencilImage: string | null;
+        width: number; height: number; bgColor: string;
+    }) => {
+        setSlides(prev => [...prev, { id: Math.random().toString(36), ...captureData }]);
         // Optional: switch back to select tool or keep capturing?
         // drawerRef.current?.updateTool("select");
         // For smoother UX, let's keep capturing but maybe show a toast?
