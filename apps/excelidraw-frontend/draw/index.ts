@@ -47,7 +47,7 @@ const isTextShape = (shape: Shape): shape is Extract<Shape, { type: "text" }> =>
     return shape.type === "text";
 };
 
-export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket, initialTool: Tool, token: string, onZoomChange?: (scale: number) => void, initialBackgroundColor: string = "#ffffff", onCapture?: (image: string) => void) {
+export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket, initialTool: Tool, token: string, onZoomChange?: (scale: number) => void, initialBackgroundColor: string = "#ffffff", onCapture?: (captureData: any) => void) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -438,8 +438,39 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
 
                 if (tempCtx) {
                     renderScene(existingShapes, tempCanvas, tempCtx!, { x: -x, y: -y, scale: 1 }, backgroundColor, imageCache, null);
+                    
+                    const elements = [];
+                    for (const shape of existingShapes) {
+                        if (shapeIntersectRect(shape, x, y, width, height, ctx!)) {
+                            const normalized = JSON.parse(JSON.stringify(shape)); // deep copy
+                            if (normalized.type === "rect" || normalized.type === "text" || normalized.type === "image") {
+                                normalized.x -= x;
+                                normalized.y -= y;
+                            } else if (normalized.type === "circle") {
+                                normalized.centerX -= x;
+                                normalized.centerY -= y;
+                            } else if (normalized.type === "line") {
+                                normalized.startX -= x;
+                                normalized.startY -= y;
+                                normalized.endX -= x;
+                                normalized.endY -= y;
+                            } else if (normalized.type === "pencil") {
+                                normalized.points = simplifyPath(normalized.points.map((p: any) => ({ x: p.x - x, y: p.y - y })), 3);
+                            }
+                            
+                            elements.push(normalized);
+                        }
+                    }
+
                     if (onCapture) {
-                        onCapture(tempCanvas.toDataURL("image/png"));
+                        onCapture({
+                            image: tempCanvas.toDataURL("image/png"),
+                            elements,
+                            pencilImage: null,
+                            width,
+                            height,
+                            bgColor: backgroundColor
+                        });
                     }
                 }
             }
@@ -864,6 +895,45 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
 }
 
 
+function shapeIntersectRect(shape: Shape, x: number, y: number, w: number, h: number, ctx: CanvasRenderingContext2D): boolean {
+    const rx = x, ry = y, rw = w, rh = h;
+    if (shape.type === "rect") {
+        const sx = Math.min(shape.x, shape.x + shape.width);
+        const sy = Math.min(shape.y, shape.y + shape.height);
+        const sw = Math.abs(shape.width);
+        const sh = Math.abs(shape.height);
+        return !(sx > rx + rw || sx + sw < rx || sy > ry + rh || sy + sh < ry);
+    } else if (shape.type === "circle") {
+        const cx = Math.max(rx, Math.min(shape.centerX, rx + rw));
+        const cy = Math.max(ry, Math.min(shape.centerY, ry + rh));
+        const dist = Math.sqrt(Math.pow(cx - shape.centerX, 2) + Math.pow(cy - shape.centerY, 2));
+        return dist <= shape.radius;
+    } else if (shape.type === "image") {
+        const sx = Math.min(shape.x, shape.x + shape.width);
+        const sy = Math.min(shape.y, shape.y + shape.height);
+        const sw = Math.abs(shape.width);
+        const sh = Math.abs(shape.height);
+        return !(sx > rx + rw || sx + sw < rx || sy > ry + rh || sy + sh < ry);
+    } else if (shape.type === "line") {
+        const minX = Math.min(shape.startX, shape.endX);
+        const maxX = Math.max(shape.startX, shape.endX);
+        const minY = Math.min(shape.startY, shape.endY);
+        const maxY = Math.max(shape.startY, shape.endY);
+        return !(minX > rx + rw || maxX < rx || minY > ry + rh || maxY < ry);
+    } else if (shape.type === "text") {
+        ctx.font = "20px Arial";
+        const textWidth = ctx.measureText(shape.text).width;
+        const textHeight = 20;
+        return !(shape.x > rx + rw || shape.x + textWidth < rx || shape.y - textHeight > ry + rh || shape.y < ry);
+    } else if (shape.type === "pencil") {
+        for (const p of shape.points) {
+            if (p.x >= rx && p.x <= rx + rw && p.y >= ry && p.y <= ry + rh) return true;
+        }
+        return false;
+    }
+    return false;
+}
+
 function findShapeAt(x: number, y: number, existingShapes: Shape[], ctx: CanvasRenderingContext2D): Shape | null {
     const threshold = 10;
     for (let i = existingShapes.length - 1; i >= 0; i--) {
@@ -1075,4 +1145,23 @@ async function getExistingShapes(roomId: string, token: string) {
         }
         return [];
     }
+}
+
+function simplifyPath(points: { x: number, y: number }[], tolerance: number = 3): { x: number, y: number }[] {
+    if (points.length <= 2) return points;
+    
+    const result = [points[0]];
+    let lastPoint = points[0];
+    
+    for (let i = 1; i < points.length - 1; i++) {
+        const point = points[i];
+        const dist = Math.sqrt(Math.pow(point.x - lastPoint.x, 2) + Math.pow(point.y - lastPoint.y, 2));
+        if (dist >= tolerance) {
+            result.push(point);
+            lastPoint = point;
+        }
+    }
+    
+    result.push(points[points.length - 1]);
+    return result;
 }
