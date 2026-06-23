@@ -272,7 +272,7 @@ export function VoiceChat({ roomId, socket, userId, userName }: VoiceChatProps) 
 
         // Handle remote stream
         pc.ontrack = (event) => {
-            console.log(`Received remote track from ${remoteName}`, event.streams);
+            console.log("Received remote track from %s", remoteName, event.streams);
             // Fallback for browsers that don't provide streams[0]
             const stream = event.streams[0] || new MediaStream([event.track]);
             peer.stream = stream;
@@ -280,13 +280,13 @@ export function VoiceChat({ roomId, socket, userId, userName }: VoiceChatProps) 
         };
 
         pc.oniceconnectionstatechange = () => {
-            console.log(`ICE State with ${remoteName}:`, pc.iceConnectionState);
+            console.log("ICE State with %s:", remoteName, pc.iceConnectionState);
             peer.status = pc.iceConnectionState;
             setPeers({ ...peersRef.current });
         };
 
         pc.onconnectionstatechange = () => {
-            console.log(`Connection State with ${remoteName}:`, pc.connectionState);
+            console.log("Connection State with %s:", remoteName, pc.connectionState);
         };
 
         pc.onicecandidateerror = (event) => {
@@ -294,7 +294,7 @@ export function VoiceChat({ roomId, socket, userId, userName }: VoiceChatProps) 
             if (event.errorCode === 701) {
                 console.warn(`ICE Warning (701) with ${remoteName}: STUN binding timeout (likely a blocked path, harmless if other candidates work).`);
             } else {
-                console.error(`ICE Candidate Error with ${remoteName}:`, event.errorCode, event.errorText);
+                console.error("ICE Candidate Error with %s:", remoteName, event.errorCode, event.errorText);
             }
         };
 

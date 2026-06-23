@@ -62,14 +62,11 @@ export async function middleware(req: CustomRequest, res: Response, next: NextFu
             message: err.message,
             stack: err.stack,
             reason: err.reason, // Clerk specific sometimes
-            tokenSnippet: jwt ? jwt.substring(0, 10) + "..." : "NONE",
-            keySnippet: process.env.CLERK_SECRET_KEY ? process.env.CLERK_SECRET_KEY.substring(0, 10) + "..." : "NONE",
-            keyLength: process.env.CLERK_SECRET_KEY?.length || 0
+            tokenSnippet: jwt ? jwt.substring(0, 10) + "..." : "NONE"
         });
         res.status(403).json({
             message: "Unauthorized",
-            debug: err.message || "Unknown auth error",
-            keyLength: process.env.CLERK_SECRET_KEY?.length || 0
+            debug: err.message || "Unknown auth error"
         });
     }
 }
