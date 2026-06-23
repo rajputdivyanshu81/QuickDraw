@@ -171,7 +171,8 @@ app.post("/generate-ppt", async (req: Request, res: Response) => {
                 }
 
                 for (const el of slideData.elements) {
-                    const color = (el.color || "ffffff").replace("#", "");
+                    const colorVal = (el.color || "ffffff").replace("#", "");
+                    const color = colorVal === "black" ? "000000" : colorVal;
 
                     switch (el.type) {
                         case "rect":
