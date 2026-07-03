@@ -50,6 +50,8 @@ export function Canvas({
 
     const [viewMode, setViewMode] = useState<"canvas" | "document" | "both">("canvas");
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+    const [splitRatio, setSplitRatio] = useState(50);
+    const [isResizingSplit, setIsResizingSplit] = useState(false);
 
     useEffect(() => {
         const updateDimensions = () => {
@@ -59,13 +61,17 @@ export function Canvas({
             } else if (viewMode === "document") {
                 setDimensions({ width: 0, height: window.innerHeight });
             } else {
-                setDimensions({ width: window.innerWidth / 2, height: window.innerHeight - navHeight });
+                const canvasPercentage = 100 - splitRatio;
+                setDimensions({ 
+                    width: (window.innerWidth * canvasPercentage) / 100, 
+                    height: window.innerHeight - navHeight 
+                });
             }
         };
         updateDimensions();
         window.addEventListener("resize", updateDimensions);
         return () => window.removeEventListener("resize", updateDimensions);
-    }, [viewMode]);
+    }, [viewMode, splitRatio]);
 
     const [backgroundColor, setBackgroundColor] = useState<string>("#ffffff");
 
@@ -81,6 +87,34 @@ export function Canvas({
         camera: { x: number, y: number, scale: number }
     } | null>(null);
 
+
+    const handleResizerMouseDown = (e: React.MouseEvent) => {
+        setIsResizingSplit(true);
+        e.preventDefault();
+    };
+
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!isResizingSplit) return;
+            const newRatio = (e.clientX / window.innerWidth) * 100;
+            // Constrain between 20% and 80% to prevent squishing layout
+            setSplitRatio(Math.max(20, Math.min(80, newRatio)));
+        };
+
+        const handleMouseUp = () => {
+            setIsResizingSplit(false);
+        };
+
+        if (isResizingSplit) {
+            window.addEventListener("mousemove", handleMouseMove);
+            window.addEventListener("mouseup", handleMouseUp);
+        }
+
+        return () => {
+            window.removeEventListener("mousemove", handleMouseMove);
+            window.removeEventListener("mouseup", handleMouseUp);
+        };
+    }, [isResizingSplit]);
 
     useEffect(() => {
         if (drawerRef.current) {
@@ -270,14 +304,30 @@ export function Canvas({
 
             {/* Document Panel */}
             {viewMode !== "canvas" && (
-                <div className={`${viewMode === "both" ? "w-1/2" : "w-full"} h-full`}>
+                <div 
+                    style={{ width: viewMode === "both" ? `${splitRatio}%` : "100%" }}
+                    className={`h-full shrink-0 overflow-hidden ${isResizingSplit ? "pointer-events-none select-none" : ""}`}
+                >
                     <DocumentEditor roomId={roomId} />
+                </div>
+            )}
+
+            {/* Resizer Handle */}
+            {viewMode === "both" && (
+                <div 
+                    onMouseDown={handleResizerMouseDown}
+                    className="w-1.5 hover:w-2 h-full cursor-col-resize bg-[#1e1e1e] hover:bg-indigo-600 border-x border-[#121212] z-50 flex items-center justify-center transition-all shrink-0 select-none group"
+                >
+                    <div className="w-[2px] h-8 bg-gray-700 group-hover:bg-white rounded transition-colors" />
                 </div>
             )}
 
             {/* Canvas Panel */}
             {viewMode !== "document" && (
-                <div className={`relative h-full ${viewMode === "both" ? "w-1/2" : "w-full"} flex flex-col`}>
+                <div 
+                    style={{ width: viewMode === "both" ? `${100 - splitRatio}%` : "100%" }}
+                    className={`relative h-full flex flex-col shrink-0 overflow-hidden ${isResizingSplit ? "pointer-events-none select-none" : ""}`}
+                >
                     
                     {/* Whiteboard Header Navbar (only in split screen) */}
                     {viewMode === "both" && (
