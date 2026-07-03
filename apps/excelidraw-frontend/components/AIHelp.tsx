@@ -24,6 +24,12 @@ export function AIHelp() {
     const toggleChat = () => setIsOpen(!isOpen);
 
     useEffect(() => {
+        const handleOpenAI = () => setIsOpen(true);
+        window.addEventListener("open-ai-chat", handleOpenAI);
+        return () => window.removeEventListener("open-ai-chat", handleOpenAI);
+    }, []);
+
+    useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
@@ -31,6 +37,8 @@ export function AIHelp() {
 
     // Hide on landing page (after all hooks)
     if (pathname === "/") return null;
+
+    const isCanvasPage = pathname?.includes("/canvas");
 
     const handleSend = async () => {
         if (!input.trim() || loading) return;
@@ -69,7 +77,7 @@ export function AIHelp() {
     return (
         <>
             {/* Toggle Button */}
-            {!isOpen && (
+            {!isOpen && !isCanvasPage && (
                 <motion.button
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
@@ -92,7 +100,7 @@ export function AIHelp() {
                         exit={{ opacity: 0, scale: 0.9, y: 20 }}
                         drag
                         dragMomentum={false}
-                        className="fixed top-20 left-4 z-[9999] w-[350px] md:w-[400px] h-[500px] bg-white rounded-2xl shadow-2xl border border-gray-100 flex flex-col overflow-hidden"
+                        className={`fixed top-20 ${isCanvasPage ? 'right-4' : 'left-4'} z-[9999] w-[350px] md:w-[400px] h-[500px] bg-white rounded-2xl shadow-2xl border border-gray-100 flex flex-col overflow-hidden`}
                     >
                         {/* Header */}
                         <div className="bg-gradient-to-r from-indigo-600 to-violet-600 p-4 flex items-center justify-between cursor-move handle">

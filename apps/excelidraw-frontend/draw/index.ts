@@ -27,6 +27,12 @@ type Shape = ({
     endX: number;
     endY: number;
 } | {
+    type: "arrow";
+    startX: number;
+    startY: number;
+    endX: number;
+    endY: number;
+} | {
     type: "image";
     data: string;
     x: number;
@@ -35,7 +41,7 @@ type Shape = ({
     height: number;
 }) & { id: string; color?: string };
 
-export type Tool = "rect" | "circle" | "pencil" | "eraser" | "text" | "select" | "line" | "pan" | "ppt-capture" | "laser";
+export type Tool = "rect" | "circle" | "pencil" | "eraser" | "text" | "select" | "line" | "pan" | "ppt-capture" | "laser" | "arrow";
 
 type LaserPointerData = {
     points: { x: number, y: number, timestamp: number }[],
@@ -56,6 +62,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
     let selectedTool: Tool = initialTool;
     let selectedColor: string = "black";
     let backgroundColor: string = initialBackgroundColor;
+    canvas.style.backgroundColor = initialBackgroundColor;
 
     // Identity for local laser/interactions
     let myUserId = "anon";
@@ -449,7 +456,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                             } else if (normalized.type === "circle") {
                                 normalized.centerX -= x;
                                 normalized.centerY -= y;
-                            } else if (normalized.type === "line") {
+                            } else if (normalized.type === "line" || normalized.type === "arrow") {
                                 normalized.startX -= x;
                                 normalized.startY -= y;
                                 normalized.endX -= x;
@@ -509,16 +516,16 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                 points: currentPath,
                 color: selectedColor
             };
-        } else if (selectedTool === "line") {
+        } else if (selectedTool === "line" || selectedTool === "arrow") {
             shape = {
-                type: "line",
+                type: selectedTool,
                 id: Math.random().toString(36).substring(2, 9),
                 startX: startX,
                 startY: startY,
                 endX: worldPos.x,
                 endY: worldPos.y,
                 color: selectedColor
-            };
+            } as Shape;
         }
 
         if (shape) {
@@ -598,6 +605,22 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                 ctx.moveTo(startX, startY);
                 ctx.lineTo(worldPos.x, worldPos.y);
                 ctx.stroke();
+            } else if (selectedTool === "arrow") {
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(worldPos.x, worldPos.y);
+                ctx.stroke();
+                
+                // Draw arrowhead preview
+                const angle = Math.atan2(worldPos.y - startY, worldPos.x - startX);
+                const arrowLength = 15;
+                ctx.beginPath();
+                ctx.moveTo(worldPos.x, worldPos.y);
+                ctx.lineTo(worldPos.x - arrowLength * Math.cos(angle - Math.PI / 6), worldPos.y - arrowLength * Math.sin(angle - Math.PI / 6));
+                ctx.lineTo(worldPos.x - arrowLength * Math.cos(angle + Math.PI / 6), worldPos.y - arrowLength * Math.sin(angle + Math.PI / 6));
+                ctx.closePath();
+                ctx.fillStyle = ctx.strokeStyle;
+                ctx.fill();
             } else if (selectedTool === "eraser") {
                 const shapeToErace = findShapeAt(worldPos.x, worldPos.y, existingShapes, ctx);
                 if (shapeToErace) {
@@ -632,7 +655,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                     }));
                     dragOffsetX = worldPos.x;
                     dragOffsetY = worldPos.y;
-                } else if (selectedShape.type === "line") {
+                } else if (selectedShape.type === "line" || selectedShape.type === "arrow") {
                     const width = selectedShape.endX - selectedShape.startX;
                     const height = selectedShape.endY - selectedShape.startY;
                     selectedShape.startX = worldPos.x - dragOffsetX;
@@ -788,7 +811,9 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
     };
 
     const updateBackgroundColor = (newColor: string) => {
+        console.log("draw/index.ts updateBackgroundColor called with:", newColor);
         backgroundColor = newColor;
+        canvas.style.backgroundColor = newColor;
         clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, null, laserPointers);
     };
 
@@ -914,7 +939,7 @@ function shapeIntersectRect(shape: Shape, x: number, y: number, w: number, h: nu
         const sw = Math.abs(shape.width);
         const sh = Math.abs(shape.height);
         return !(sx > rx + rw || sx + sw < rx || sy > ry + rh || sy + sh < ry);
-    } else if (shape.type === "line") {
+    } else if (shape.type === "line" || shape.type === "arrow") {
         const minX = Math.min(shape.startX, shape.endX);
         const maxX = Math.max(shape.startX, shape.endX);
         const minY = Math.min(shape.startY, shape.endY);
@@ -953,7 +978,7 @@ function findShapeAt(x: number, y: number, existingShapes: Shape[], ctx: CanvasR
             const width = ctx.measureText(shape.text).width;
             const height = 20;
             if (x >= shape.x && x <= shape.x + width && y >= shape.y - height && y <= shape.y) return shape;
-        } else if (shape.type === "line") {
+        } else if (shape.type === "line" || shape.type === "arrow") {
             const dist = Math.abs((shape.endY - shape.startY) * x - (shape.endX - shape.startX) * y + shape.endX * shape.startY - shape.endY * shape.startX) / Math.sqrt(Math.pow(shape.endY - shape.startY, 2) + Math.pow(shape.endX - shape.startX, 2));
             if (dist < threshold && x >= Math.min(shape.startX, shape.endX) - threshold && x <= Math.max(shape.startX, shape.endX) + threshold && y >= Math.min(shape.startY, shape.endY) - threshold && y <= Math.max(shape.startY, shape.endY) + threshold) return shape;
         } else if (shape.type === "image") {
@@ -1004,6 +1029,21 @@ function renderScene(existingShapes: Shape[], canvas: HTMLCanvasElement, ctx: Ca
             ctx.moveTo(shape.startX, shape.startY);
             ctx.lineTo(shape.endX, shape.endY);
             ctx.stroke();
+        } else if (shape.type === "arrow") {
+            ctx.beginPath();
+            ctx.moveTo(shape.startX, shape.startY);
+            ctx.lineTo(shape.endX, shape.endY);
+            ctx.stroke();
+
+            const angle = Math.atan2(shape.endY - shape.startY, shape.endX - shape.startX);
+            const arrowLength = 15;
+            ctx.beginPath();
+            ctx.moveTo(shape.endX, shape.endY);
+            ctx.lineTo(shape.endX - arrowLength * Math.cos(angle - Math.PI / 6), shape.endY - arrowLength * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(shape.endX - arrowLength * Math.cos(angle + Math.PI / 6), shape.endY - arrowLength * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fillStyle = shape.color || "black";
+            ctx.fill();
         } else if (shape.type === "image") {
             let img = imageCache.get(shape.data);
             if (!img) {

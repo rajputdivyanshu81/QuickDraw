@@ -1,7 +1,7 @@
-import { Pencil, Square, Circle, Eraser, Type, MousePointer2, Share2, Check, Download, Image as ImageIcon, FileText, Minus, Hand, Zap } from "lucide-react";
+import { Pencil, Square, Circle, Eraser, Type, MousePointer2, Share2, Check, Download, Image as ImageIcon, FileText, Minus, Hand, Zap, ArrowRight } from "lucide-react";
 import { useState } from "react";
 
-export type Tool = "rect" | "circle" | "pencil" | "eraser" | "text" | "select" | "line" | "pan" | "ppt-capture" | "laser";
+export type Tool = "rect" | "circle" | "pencil" | "eraser" | "text" | "select" | "line" | "pan" | "ppt-capture" | "laser" | "arrow";
 
 export function Toolbar({ selectedTool, onSelect, selectedColor, onColorSelect, onDownload, onImageUpload, onResetView, zoom, vertical = false }: { 
     selectedTool: Tool, 
@@ -91,6 +91,13 @@ export function Toolbar({ selectedTool, onSelect, selectedColor, onColorSelect, 
                     title="Line (L)"
                 >
                     <Minus className="w-4 h-4 md:w-5 md:h-5" />
+                </button>
+                <button 
+                    onClick={() => onSelect("arrow")}
+                    className={`p-1.5 md:p-2 rounded-xl md:rounded-full hover:bg-gray-100 transition-colors ${selectedTool === "arrow" ? "bg-indigo-100 text-indigo-600" : "text-gray-600"}`}
+                    title="Arrow (A)"
+                >
+                    <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
                 </button>
                 <button 
                     onClick={() => onSelect("rect")}

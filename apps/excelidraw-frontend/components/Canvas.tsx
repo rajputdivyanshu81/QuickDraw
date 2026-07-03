@@ -4,7 +4,7 @@ import { Toolbar, Tool } from "./Toolbar";
 import { Sidebar } from "./Sidebar";
 import jsPDF from "jspdf";
 
-import { Undo, Redo, MessageSquare, FileText, SplitSquareHorizontal, File, PenTool } from "lucide-react";
+import { Undo, Redo, MessageSquare, FileText, SplitSquareHorizontal, File, PenTool, Sparkles } from "lucide-react";
 import { ChatSidebar } from "./ChatSidebar";
 import { PPTBuilder } from "./PPTBuilder";
 import { VoiceChat } from "./VoiceChat";
@@ -52,12 +52,13 @@ export function Canvas({
 
     useEffect(() => {
         const updateDimensions = () => {
+            const navHeight = viewMode === "both" ? 56 : 0;
             if (viewMode === "canvas") {
-                setDimensions({ width: window.innerWidth, height: window.innerHeight });
+                setDimensions({ width: window.innerWidth, height: window.innerHeight - navHeight });
             } else if (viewMode === "document") {
                 setDimensions({ width: 0, height: window.innerHeight });
             } else {
-                setDimensions({ width: window.innerWidth / 2, height: window.innerHeight });
+                setDimensions({ width: window.innerWidth / 2, height: window.innerHeight - navHeight });
             }
         };
         updateDimensions();
@@ -242,7 +243,7 @@ export function Canvas({
     return (
         <div className="flex w-screen h-screen overflow-hidden bg-[#121212]">
             {/* View Mode Toggle (Top Left - where AI Help was before) */}
-            <div className="absolute top-4 left-4 z-[60] flex bg-[#1e1e1e] border border-[#2a2a2a] rounded-lg p-1 shadow-lg">
+            <div className="absolute top-[22px] left-6 z-[60] flex bg-[#1e1e1e] border border-[#2a2a2a] rounded-lg p-1 shadow-lg">
                 <button 
                     onClick={() => setViewMode("document")}
                     className={`p-2 rounded-md flex items-center justify-center transition-colors ${viewMode === "document" ? "bg-[#2a2a2a] text-indigo-400" : "text-gray-400 hover:text-gray-200"}`}
@@ -266,26 +267,6 @@ export function Canvas({
                 </button>
             </div>
 
-            {/* Canvas Controls (Top Right) */}
-            {viewMode !== "document" && (
-                <div className="absolute top-4 right-4 z-[60] flex items-center gap-2">
-                    <button
-                        onClick={() => setPptOpen(!pptOpen)}
-                        className={`flex items-center gap-2 p-2 md:px-4 md:py-2 rounded-xl md:rounded-lg shadow-lg transition-colors shrink-0 ${pptOpen ? 'bg-indigo-600 text-white' : 'bg-white/90 text-gray-700 hover:bg-gray-50 border border-gray-200'}`}
-                    >
-                        <FileText className="w-5 h-5 md:hidden" />
-                        <span className="font-medium hidden md:inline text-sm">PPT</span>
-                    </button>
-                    <button
-                        onClick={() => setChatOpen(true)}
-                        className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white p-2 md:px-4 md:py-2 rounded-xl md:rounded-lg shadow-lg transition-colors shrink-0"
-                    >
-                        <MessageSquare className="w-5 h-5" />
-                        <span className="hidden md:inline font-medium text-sm">Chat</span>
-                    </button>
-                </div>
-            )}
-
             {/* Document Panel */}
             {viewMode !== "canvas" && (
                 <div className={`${viewMode === "both" ? "w-1/2" : "w-full"} h-full`}>
@@ -295,7 +276,118 @@ export function Canvas({
 
             {/* Canvas Panel */}
             {viewMode !== "document" && (
-                <div className={`relative h-full ${viewMode === "both" ? "w-1/2" : "w-full"}`}>
+                <div className={`relative h-full ${viewMode === "both" ? "w-1/2" : "w-full"} flex flex-col`}>
+                    
+                    {/* Whiteboard Header Navbar (only in split screen) */}
+                    {viewMode === "both" && (
+                        <div className="w-full h-14 bg-[#1e1e1e] border-b border-[#2a2a2a] flex items-center justify-between px-4 z-[45] shrink-0">
+                            {/* Left Side: Background Color Picker & Undo/Redo */}
+                            <div className="flex items-center gap-3">
+                                <Sidebar 
+                                    selectedBgColor={backgroundColor} 
+                                    onBgColorSelect={setBackgroundColor} 
+                                    inline={true}
+                                />
+                                <div className="w-px h-5 bg-[#2a2a2a]" />
+                                <div className="flex bg-[#2a2a2a]/60 border border-[#2a2a2a] rounded-lg p-0.5">
+                                    <button 
+                                        onClick={() => drawerRef.current?.undo()} 
+                                        className="p-1.5 hover:bg-[#2a2a2a] text-gray-400 hover:text-white rounded transition-colors" 
+                                        title="Undo (Ctrl+Z)"
+                                    >
+                                        <Undo className="w-4 h-4" />
+                                    </button>
+                                    <div className="w-px h-4 bg-[#2a2a2a] my-auto" />
+                                    <button 
+                                        onClick={() => drawerRef.current?.redo()} 
+                                        className="p-1.5 hover:bg-[#2a2a2a] text-gray-400 hover:text-white rounded transition-colors" 
+                                        title="Redo (Ctrl+Y)"
+                                    >
+                                        <Redo className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Right Side: AI Assistant, PPT, Chat */}
+                            <div className="flex items-center gap-2">
+                                <button 
+                                    onClick={() => window.dispatchEvent(new CustomEvent("open-ai-chat"))}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-lg text-xs font-semibold shadow transition-all active:scale-95 shrink-0"
+                                >
+                                    <Sparkles className="w-3.5 h-3.5" />
+                                    <span>AI Assistant</span>
+                                </button>
+                                <button 
+                                    onClick={() => setPptOpen(!pptOpen)} 
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all shrink-0 ${
+                                        pptOpen 
+                                            ? 'bg-indigo-600 border-indigo-700 text-white' 
+                                            : 'bg-[#2a2a2a] border-[#3a3a3a] text-gray-300 hover:text-white'
+                                    }`}
+                                >
+                                    <FileText className="w-3.5 h-3.5" />
+                                    <span>PPT</span>
+                                </button>
+                                <button 
+                                    onClick={() => setChatOpen(true)} 
+                                    className="flex items-center gap-1.5 bg-[#2a2a2a] hover:bg-[#323232] text-gray-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold border border-[#3a3a3a] transition-all shrink-0"
+                                >
+                                    <MessageSquare className="w-3.5 h-3.5" />
+                                    <span>Chat</span>
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Floating Controls for Canvas Only mode */}
+                    {viewMode === "canvas" && (
+                        <>
+                            {/* Top Right Floating Chat & PPT */}
+                            <div className="absolute top-4 right-4 z-[60] flex items-center gap-2">
+                                <button
+                                    onClick={() => setPptOpen(!pptOpen)}
+                                    className={`flex items-center gap-2 p-2 md:px-4 md:py-2 rounded-xl md:rounded-lg shadow-lg transition-colors shrink-0 ${pptOpen ? 'bg-indigo-600 text-white' : 'bg-white/90 text-gray-700 hover:bg-gray-50 border border-gray-200'}`}
+                                >
+                                    <FileText className="w-5 h-5 md:hidden" />
+                                    <span className="font-medium hidden md:inline text-sm">PPT</span>
+                                </button>
+                                <button
+                                    onClick={() => setChatOpen(true)}
+                                    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white p-2 md:px-4 md:py-2 rounded-xl md:rounded-lg shadow-lg transition-colors shrink-0"
+                                >
+                                    <MessageSquare className="w-5 h-5" />
+                                    <span className="hidden md:inline font-medium text-sm">Chat</span>
+                                </button>
+                            </div>
+
+                            {/* Floating Sidebar (Palette) */}
+                            <Sidebar 
+                                selectedBgColor={backgroundColor} 
+                                onBgColorSelect={setBackgroundColor} 
+                                inline={false}
+                            />
+
+                            {/* Floating Undo/Redo */}
+                            <div className="absolute bottom-24 md:bottom-8 left-4 z-50 flex flex-col gap-2 bg-white/90 backdrop-blur-sm p-1.5 rounded-2xl shadow-xl border border-gray-200">
+                                <button 
+                                    onClick={() => drawerRef.current?.undo()}
+                                    className="p-2.5 hover:bg-gray-100 rounded-xl transition-colors text-gray-700"
+                                    title="Undo (Ctrl+Z)"
+                                >
+                                    <Undo className="w-5 h-5" />
+                                </button>
+                                <div className="h-px bg-gray-100 mx-1" />
+                                <button 
+                                    onClick={() => drawerRef.current?.redo()}
+                                    className="p-2.5 hover:bg-gray-100 rounded-xl transition-colors text-gray-700"
+                                    title="Redo (Ctrl+Y)"
+                                >
+                                    <Redo className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </>
+                    )}
+
                     <Toolbar 
                         selectedTool={selectedTool} 
                         onSelect={(t) => setSelectedTool(t)} 
@@ -306,10 +398,6 @@ export function Canvas({
                         onResetView={() => drawerRef.current?.resetView()}
                         zoom={zoom}
                         vertical={viewMode === "both"}
-                    />
-                    <Sidebar 
-                        selectedBgColor={backgroundColor} 
-                        onBgColorSelect={setBackgroundColor} 
                     />
 
                     <PPTBuilder 
@@ -335,32 +423,11 @@ export function Canvas({
                         userName={myUserInfo.name}
                     />
 
-                    {/* Bottom Left Controls (Undo/Redo) */}
-                    <div className="absolute bottom-24 md:bottom-8 left-4 flex flex-col gap-2 z-50">
-                        <div className="flex flex-col gap-1 bg-white/90 backdrop-blur-sm p-1.5 rounded-2xl shadow-xl border border-gray-200">
-                            <button 
-                                onClick={() => drawerRef.current?.undo()}
-                                className="p-2.5 hover:bg-gray-100 rounded-xl transition-colors text-gray-700"
-                                title="Undo (Ctrl+Z)"
-                            >
-                                <Undo className="w-5 h-5" />
-                            </button>
-                            <div className="h-px bg-gray-100 mx-1"></div>
-                            <button 
-                                onClick={() => drawerRef.current?.redo()}
-                                className="p-2.5 hover:bg-gray-100 rounded-xl transition-colors text-gray-700"
-                                title="Redo (Ctrl+Y)"
-                            >
-                                <Redo className="w-5 h-5" />
-                            </button>
-                        </div>
-                    </div>
-
                     <canvas 
                         ref={canvasRef} 
                         width={dimensions.width} 
                         height={dimensions.height} 
-                        className={`bg-white border-l border-gray-200 shadow-inner ${selectedTool === "ppt-capture" ? "cursor-crosshair" : ""}`}
+                        className={`border-l border-gray-200 shadow-inner ${selectedTool === "ppt-capture" ? "cursor-crosshair" : ""}`}
                     ></canvas>
                 </div>
             )}

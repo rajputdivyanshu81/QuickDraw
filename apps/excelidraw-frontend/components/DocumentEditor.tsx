@@ -121,29 +121,17 @@ export function DocumentEditor({ roomId }: { roomId: string }) {
         const selectedText = range.toString();
 
         if (isBlock) {
-            const pre = document.createElement("pre");
-            pre.className = "bg-[#1e1e1e] text-indigo-300 p-4 rounded-lg font-mono text-sm my-3 border border-[#2a2a2a] block overflow-x-auto whitespace-pre leading-relaxed";
-            pre.innerHTML = selectedText ? selectedText.replace(/&/g, "&amp;").replace(/</g, "&lt;") : "// Write code here...\n";
-            range.deleteContents();
-            range.insertNode(pre);
-            
-            // Set cursor inside pre
-            const newRange = document.createRange();
-            newRange.selectNodeContents(pre);
-            newRange.collapse(false);
-            selection.removeAllRanges();
-            selection.addRange(newRange);
+            document.execCommand("formatBlock", false, "pre");
         } else {
             const code = document.createElement("code");
             code.className = "bg-[#1e1e1e] text-indigo-300 px-1.5 py-0.5 rounded font-mono text-sm border border-[#2a2a2a] mx-0.5";
-            code.textContent = selectedText || "code";
+            code.textContent = selectedText || "you can write your code here";
             range.deleteContents();
             range.insertNode(code);
 
-            // Move cursor past code element
+            // Auto-select the entire contents of the code node so typing immediately replaces it
             const newRange = document.createRange();
-            newRange.setStartAfter(code);
-            newRange.collapse(true);
+            newRange.selectNodeContents(code);
             selection.removeAllRanges();
             selection.addRange(newRange);
         }
@@ -152,12 +140,14 @@ export function DocumentEditor({ roomId }: { roomId: string }) {
 
     return (
         <div className="w-full h-full bg-[#121212] flex flex-col p-6 border-r border-[#2a2a2a] relative z-10">
-            <div className="flex justify-between items-center mb-4 shrink-0">
-                <h2 className="text-gray-300 font-semibold text-lg flex items-center gap-2">
-                    <span className="bg-[#2a2a2a] p-1.5 rounded-md text-indigo-400">📝</span> 
-                    Untitled File
+            <div className="flex justify-between items-center mb-4 shrink-0 pl-40">
+                <h2 className="text-gray-300 font-semibold text-lg flex items-center gap-2.5">
+                    <div className="bg-indigo-950/60 border border-indigo-500/30 p-2 rounded-xl text-indigo-400 shadow-lg shadow-indigo-500/10 flex items-center justify-center animate-pulse">
+                        <Sparkles className="w-4.5 h-4.5" />
+                    </div> 
+                    <span className="bg-gradient-to-r from-indigo-200 via-slate-100 to-white bg-clip-text text-transparent font-bold tracking-tight text-lg">QuickDraft</span>
                 </h2>
-                {isSaving && <span className="text-xs text-indigo-400 animate-pulse">Saving...</span>}
+                {isSaving && <span className="text-xs text-indigo-400 animate-pulse font-mono">Syncing...</span>}
             </div>
 
             {/* Editable Content Panel */}
@@ -170,7 +160,8 @@ export function DocumentEditor({ roomId }: { roomId: string }) {
                 [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:my-3 [&_h2]:text-gray-200
                 [&_h3]:text-xl [&_h3]:font-medium [&_h3]:my-2 [&_h3]:text-gray-300
                 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2
-                [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2"
+                [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2
+                [&_pre]:w-full [&_pre]:bg-[#1e1e1e] [&_pre]:text-indigo-300 [&_pre]:p-4 [&_pre]:rounded-lg [&_pre]:font-mono [&_pre]:text-sm [&_pre]:my-3 [&_pre]:border [&_pre]:border-[#2a2a2a] [&_pre]:block [&_pre]:overflow-x-auto [&_pre]:whitespace-pre [&_pre]:leading-relaxed"
                 style={{ minHeight: "200px" }}
             />
 
