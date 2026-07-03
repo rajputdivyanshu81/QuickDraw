@@ -82,7 +82,7 @@ export function DocumentEditor({ roomId, token }: { roomId: string, token: strin
 
     return (
         <div className="w-full h-full bg-[#121212] flex flex-col p-6 border-r border-[#2a2a2a] relative z-10">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center mb-4 pl-28">
                 <h2 className="text-gray-300 font-semibold text-lg flex items-center gap-2">
                     <span className="bg-[#2a2a2a] p-1.5 rounded-md text-indigo-400">📝</span> 
                     Untitled File

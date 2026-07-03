@@ -241,29 +241,52 @@ export function Canvas({
 
     return (
         <div className="flex w-screen h-screen overflow-hidden bg-[#121212]">
-            {/* View Mode Toggle */}
-            <div className="absolute top-4 left-4 z-[60] flex bg-[#1e1e1e] border border-[#2a2a2a] rounded-lg p-1 shadow-lg">
-                <button 
-                    onClick={() => setViewMode("document")}
-                    className={`p-2 rounded-md flex items-center justify-center transition-colors ${viewMode === "document" ? "bg-[#2a2a2a] text-indigo-400" : "text-gray-400 hover:text-gray-200"}`}
-                    title="Document Only"
-                >
-                    <File className="w-5 h-5" />
-                </button>
-                <button 
-                    onClick={() => setViewMode("both")}
-                    className={`p-2 rounded-md flex items-center justify-center transition-colors ${viewMode === "both" ? "bg-[#2a2a2a] text-indigo-400" : "text-gray-400 hover:text-gray-200"}`}
-                    title="Split View"
-                >
-                    <SplitSquareHorizontal className="w-5 h-5" />
-                </button>
-                <button 
-                    onClick={() => setViewMode("canvas")}
-                    className={`p-2 rounded-md flex items-center justify-center transition-colors ${viewMode === "canvas" ? "bg-[#2a2a2a] text-indigo-400" : "text-gray-400 hover:text-gray-200"}`}
-                    title="Canvas Only"
-                >
-                    <PenTool className="w-5 h-5" />
-                </button>
+            {/* View Mode & Controls Group at Top Right */}
+            <div className="absolute top-4 right-4 z-[60] flex items-center gap-2">
+                {/* View Mode Toggle */}
+                <div className="flex bg-[#1e1e1e] border border-[#2a2a2a] rounded-lg p-1 shadow-lg">
+                    <button 
+                        onClick={() => setViewMode("document")}
+                        className={`p-2 rounded-md flex items-center justify-center transition-colors ${viewMode === "document" ? "bg-[#2a2a2a] text-indigo-400" : "text-gray-400 hover:text-gray-200"}`}
+                        title="Document Only"
+                    >
+                        <File className="w-5 h-5" />
+                    </button>
+                    <button 
+                        onClick={() => setViewMode("both")}
+                        className={`p-2 rounded-md flex items-center justify-center transition-colors ${viewMode === "both" ? "bg-[#2a2a2a] text-indigo-400" : "text-gray-400 hover:text-gray-200"}`}
+                        title="Split View"
+                    >
+                        <SplitSquareHorizontal className="w-5 h-5" />
+                    </button>
+                    <button 
+                        onClick={() => setViewMode("canvas")}
+                        className={`p-2 rounded-md flex items-center justify-center transition-colors ${viewMode === "canvas" ? "bg-[#2a2a2a] text-indigo-400" : "text-gray-400 hover:text-gray-200"}`}
+                        title="Canvas Only"
+                    >
+                        <PenTool className="w-5 h-5" />
+                    </button>
+                </div>
+
+                {/* Canvas Controls */}
+                {viewMode !== "document" && (
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setPptOpen(!pptOpen)}
+                            className={`flex items-center gap-2 p-2 md:px-4 md:py-2 rounded-xl md:rounded-lg shadow-lg transition-colors shrink-0 ${pptOpen ? 'bg-indigo-600 text-white' : 'bg-white/90 text-gray-700 hover:bg-gray-50 border border-gray-200'}`}
+                        >
+                            <FileText className="w-5 h-5 md:hidden" />
+                            <span className="font-medium hidden md:inline text-sm">PPT</span>
+                        </button>
+                        <button
+                            onClick={() => setChatOpen(true)}
+                            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white p-2 md:px-4 md:py-2 rounded-xl md:rounded-lg shadow-lg transition-colors shrink-0"
+                        >
+                            <MessageSquare className="w-5 h-5" />
+                            <span className="hidden md:inline font-medium text-sm">Chat</span>
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Document Panel */}
@@ -290,24 +313,6 @@ export function Canvas({
                         selectedBgColor={backgroundColor} 
                         onBgColorSelect={setBackgroundColor} 
                     />
-                    
-                    {/* Top Right Controls */}
-                    <div className="absolute top-4 right-4 flex flex-col md:flex-row gap-2 z-10 items-end md:items-center">
-                        <button
-                            onClick={() => setPptOpen(!pptOpen)}
-                            className={`flex items-center gap-2 p-2 md:px-4 md:py-2 rounded-xl md:rounded-lg shadow-lg transition-colors shrink-0 ${pptOpen ? 'bg-indigo-600 text-white' : 'bg-white/90 text-gray-700 hover:bg-gray-50 border border-gray-200'}`}
-                        >
-                            <FileText className="w-5 h-5 md:hidden" />
-                            <span className="font-medium hidden md:inline text-sm">PPT</span>
-                        </button>
-                        <button
-                            onClick={() => setChatOpen(true)}
-                            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white p-2 md:px-4 md:py-2 rounded-xl md:rounded-lg shadow-lg transition-colors shrink-0"
-                        >
-                            <MessageSquare className="w-5 h-5" />
-                            <span className="hidden md:inline font-medium text-sm">Chat</span>
-                        </button>
-                    </div>
 
                     <PPTBuilder 
                         isOpen={pptOpen} 
