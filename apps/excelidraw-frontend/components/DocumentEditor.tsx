@@ -1,9 +1,11 @@
 "use client";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef } from "react";
+import { useAuth } from "@clerk/nextjs";
 import axios from "axios";
 import { HTTP_BACKEND } from "@/config";
 
-export function DocumentEditor({ roomId, token }: { roomId: string, token: string }) {
+export function DocumentEditor({ roomId }: { roomId: string }) {
+    const { getToken } = useAuth();
     const [content, setContent] = useState("");
     const [isSaving, setIsSaving] = useState(false);
     const lastPushedContent = useRef("");
@@ -14,6 +16,9 @@ export function DocumentEditor({ roomId, token }: { roomId: string, token: strin
         let mounted = true;
         const fetchDoc = async () => {
             try {
+                const token = await getToken();
+                if (!token) return;
+                
                 const res = await axios.get(`${HTTP_BACKEND}/document/${roomId}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
@@ -27,7 +32,7 @@ export function DocumentEditor({ roomId, token }: { roomId: string, token: strin
         };
         fetchDoc();
         return () => { mounted = false; };
-    }, [roomId, token]);
+    }, [roomId, getToken]);
 
     // Polling
     useEffect(() => {
@@ -35,6 +40,9 @@ export function DocumentEditor({ roomId, token }: { roomId: string, token: strin
             if (isLocalChange.current) return;
             
             try {
+                const token = await getToken();
+                if (!token) return;
+
                 const res = await axios.get(`${HTTP_BACKEND}/document/${roomId}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
@@ -49,7 +57,7 @@ export function DocumentEditor({ roomId, token }: { roomId: string, token: strin
             }
         }, 2500);
         return () => clearInterval(interval);
-    }, [roomId, token, content]);
+    }, [roomId, getToken, content]);
 
     // Debounced save
     useEffect(() => {
@@ -58,6 +66,9 @@ export function DocumentEditor({ roomId, token }: { roomId: string, token: strin
         const timeoutId = setTimeout(async () => {
             setIsSaving(true);
             try {
+                const token = await getToken();
+                if (!token) return;
+
                 await axios.put(`${HTTP_BACKEND}/document/${roomId}`, {
                     document: content
                 }, {
@@ -73,7 +84,7 @@ export function DocumentEditor({ roomId, token }: { roomId: string, token: strin
         }, 1000); // 1s debounce
 
         return () => clearTimeout(timeoutId);
-    }, [content, roomId, token]);
+    }, [content, roomId, getToken]);
 
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setContent(e.target.value);

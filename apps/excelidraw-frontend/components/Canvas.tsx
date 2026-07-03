@@ -289,7 +289,7 @@ export function Canvas({
             {/* Document Panel */}
             {viewMode !== "canvas" && (
                 <div className={`${viewMode === "both" ? "w-1/2" : "w-full"} h-full`}>
-                    <DocumentEditor roomId={roomId} token={token} />
+                    <DocumentEditor roomId={roomId} />
                 </div>
             )}
 
