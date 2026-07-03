@@ -23,7 +23,7 @@ export function Sidebar({ selectedBgColor, onBgColorSelect }: {
             onTouchStart={(e) => e.stopPropagation()}
             onMouseEnter={() => setIsOpen(true)}
             onMouseLeave={() => setIsOpen(false)}
-            className="fixed top-20 left-4 md:top-1/2 transform md:-translate-y-1/2 bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl p-2 md:p-3 border border-gray-200 z-50 flex flex-row md:flex-col items-center gap-2 transition-all duration-300 ease-in-out"
+            className="fixed bottom-24 md:bottom-8 left-52 bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl p-2 border border-gray-200 z-50 flex flex-row items-center gap-2 transition-all duration-300 ease-in-out"
         >
             <button 
                 onClick={() => setIsOpen(!isOpen)}
@@ -33,13 +33,12 @@ export function Sidebar({ selectedBgColor, onBgColorSelect }: {
                 <Palette className="w-5 h-5" />
             </button>
             
-            <div className={`flex flex-row md:flex-col items-center gap-2 transition-all duration-300 ease-in-out overflow-hidden ${
+            <div className={`flex flex-row items-center gap-2 transition-all duration-300 ease-in-out overflow-hidden ${
                 isOpen 
                     ? "opacity-100 max-w-[300px] max-h-[300px] scale-100" 
                     : "opacity-0 max-w-0 max-h-0 scale-95 pointer-events-none"
             }`}>
-                <div className="hidden md:block w-full h-px bg-gray-200 my-1"></div>
-                <div className="w-px h-6 bg-gray-200 md:hidden shrink-0"></div>
+                <div className="w-px h-6 bg-gray-200 shrink-0 mx-1"></div>
                 
                 {backgroundColors.map((color) => (
                     <button
