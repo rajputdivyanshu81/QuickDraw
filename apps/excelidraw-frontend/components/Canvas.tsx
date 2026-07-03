@@ -9,6 +9,7 @@ import { ChatSidebar } from "./ChatSidebar";
 import { PPTBuilder } from "./PPTBuilder";
 import { VoiceChat } from "./VoiceChat";
 import { DocumentEditor } from "./DocumentEditor";
+import { Timer } from "./Timer";
 
 export function Canvas({
     roomId,
@@ -242,25 +243,25 @@ export function Canvas({
 
     return (
         <div className="flex w-screen h-screen overflow-hidden bg-[#121212]">
-            {/* View Mode Toggle (Top Left - where AI Help was before) */}
-            <div className="absolute top-[22px] left-6 z-[60] flex bg-[#1e1e1e] border border-[#2a2a2a] rounded-lg p-1 shadow-lg">
+            {/* View Mode Toggle (Top Left - Vertical Layout to prevent Toolbar overlap) */}
+            <div className="absolute top-4 left-4 z-[60] flex flex-col bg-[#1e1e1e] border border-[#2a2a2a] rounded-xl p-1 shadow-xl gap-1 bg-[#1e1e1e]/90 backdrop-blur">
                 <button 
                     onClick={() => setViewMode("document")}
-                    className={`p-2 rounded-md flex items-center justify-center transition-colors ${viewMode === "document" ? "bg-[#2a2a2a] text-indigo-400" : "text-gray-400 hover:text-gray-200"}`}
+                    className={`p-2 rounded-lg flex items-center justify-center transition-colors ${viewMode === "document" ? "bg-[#2a2a2a] text-indigo-400 border border-[#3a3a3a]" : "text-gray-400 hover:text-gray-200"}`}
                     title="Document Only"
                 >
                     <File className="w-5 h-5" />
                 </button>
                 <button 
                     onClick={() => setViewMode("both")}
-                    className={`p-2 rounded-md flex items-center justify-center transition-colors ${viewMode === "both" ? "bg-[#2a2a2a] text-indigo-400" : "text-gray-400 hover:text-gray-200"}`}
+                    className={`p-2 rounded-lg flex items-center justify-center transition-colors ${viewMode === "both" ? "bg-[#2a2a2a] text-indigo-400 border border-[#3a3a3a]" : "text-gray-400 hover:text-gray-200"}`}
                     title="Split View"
                 >
                     <SplitSquareHorizontal className="w-5 h-5" />
                 </button>
                 <button 
                     onClick={() => setViewMode("canvas")}
-                    className={`p-2 rounded-md flex items-center justify-center transition-colors ${viewMode === "canvas" ? "bg-[#2a2a2a] text-indigo-400" : "text-gray-400 hover:text-gray-200"}`}
+                    className={`p-2 rounded-lg flex items-center justify-center transition-colors ${viewMode === "canvas" ? "bg-[#2a2a2a] text-indigo-400 border border-[#3a3a3a]" : "text-gray-400 hover:text-gray-200"}`}
                     title="Canvas Only"
                 >
                     <PenTool className="w-5 h-5" />
@@ -342,24 +343,6 @@ export function Canvas({
                     {/* Floating Controls for Canvas Only mode */}
                     {viewMode === "canvas" && (
                         <>
-                            {/* Top Right Floating Chat & PPT */}
-                            <div className="absolute top-4 right-4 z-[60] flex items-center gap-2">
-                                <button
-                                    onClick={() => setPptOpen(!pptOpen)}
-                                    className={`flex items-center gap-2 p-2 md:px-4 md:py-2 rounded-xl md:rounded-lg shadow-lg transition-colors shrink-0 ${pptOpen ? 'bg-indigo-600 text-white' : 'bg-white/90 text-gray-700 hover:bg-gray-50 border border-gray-200'}`}
-                                >
-                                    <FileText className="w-5 h-5 md:hidden" />
-                                    <span className="font-medium hidden md:inline text-sm">PPT</span>
-                                </button>
-                                <button
-                                    onClick={() => setChatOpen(true)}
-                                    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white p-2 md:px-4 md:py-2 rounded-xl md:rounded-lg shadow-lg transition-colors shrink-0"
-                                >
-                                    <MessageSquare className="w-5 h-5" />
-                                    <span className="hidden md:inline font-medium text-sm">Chat</span>
-                                </button>
-                            </div>
-
                             {/* Floating Sidebar (Palette) */}
                             <Sidebar 
                                 selectedBgColor={backgroundColor} 
@@ -398,6 +381,10 @@ export function Canvas({
                         onResetView={() => drawerRef.current?.resetView()}
                         zoom={zoom}
                         vertical={viewMode === "both"}
+                        pptOpen={pptOpen}
+                        onPptToggle={() => setPptOpen(!pptOpen)}
+                        chatOpen={chatOpen}
+                        onChatToggle={() => setChatOpen(!chatOpen)}
                     />
 
                     <PPTBuilder 
@@ -431,6 +418,9 @@ export function Canvas({
                     ></canvas>
                 </div>
             )}
+            
+            {/* Global Draggable Floating Timer */}
+            <Timer />
         </div>
     );
 }

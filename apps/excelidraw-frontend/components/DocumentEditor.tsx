@@ -140,7 +140,7 @@ export function DocumentEditor({ roomId }: { roomId: string }) {
 
     return (
         <div className="w-full h-full bg-[#121212] flex flex-col p-6 border-r border-[#2a2a2a] relative z-10">
-            <div className="flex justify-between items-center mb-4 shrink-0 pl-40">
+            <div className="flex justify-between items-center mb-4 shrink-0 pl-16">
                 <h2 className="text-gray-300 font-semibold text-lg flex items-center gap-2.5">
                     <div className="bg-indigo-950/60 border border-indigo-500/30 p-2 rounded-xl text-indigo-400 shadow-lg shadow-indigo-500/10 flex items-center justify-center animate-pulse">
                         <Sparkles className="w-4.5 h-4.5" />
@@ -155,7 +155,7 @@ export function DocumentEditor({ roomId }: { roomId: string }) {
                 ref={editorRef}
                 contentEditable
                 onInput={handleInput}
-                className="flex-1 w-full bg-transparent text-gray-200 focus:outline-none overflow-y-auto text-base leading-relaxed placeholder-gray-500 pb-20 prose prose-invert max-w-none 
+                className="flex-1 w-full bg-transparent text-gray-200 focus:outline-none overflow-y-auto text-base leading-relaxed placeholder-gray-500 pb-20 prose prose-invert max-w-none pl-14 
                 [&_h1]:text-3xl [&_h1]:font-bold [&_h1]:my-4 [&_h1]:text-white
                 [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:my-3 [&_h2]:text-gray-200
                 [&_h3]:text-xl [&_h3]:font-medium [&_h3]:my-2 [&_h3]:text-gray-300
