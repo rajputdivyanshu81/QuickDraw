@@ -99,6 +99,58 @@ app.get("/room/:slug", async (req: Request, res: Response) => {
     })
 })
 
+app.get("/document/:roomId", middleware, async (req: Request, res: Response) => {
+    try {
+        const roomIdStr = req.params.roomId as string;
+        let roomId = Number(roomIdStr);
+        let room;
+
+        if (isNaN(roomId)) {
+            room = await prismaClient.room.findFirst({ where: { slug: roomIdStr } });
+        } else {
+            room = await prismaClient.room.findFirst({ where: { id: roomId } });
+        }
+
+        if (!room) {
+            res.status(404).json({ message: "Room not found" });
+            return;
+        }
+
+        res.json({ document: room.document || "" });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: "Error fetching document" });
+    }
+});
+
+app.put("/document/:roomId", middleware, async (req: Request, res: Response) => {
+    try {
+        const roomIdStr = req.params.roomId as string;
+        let roomId = Number(roomIdStr);
+        const { document } = req.body;
+
+        if (isNaN(roomId)) {
+            const room = await prismaClient.room.findFirst({ where: { slug: roomIdStr } });
+            if (room) roomId = room.id;
+        }
+
+        if (isNaN(roomId)) {
+            res.status(404).json({ message: "Room not found" });
+            return;
+        }
+
+        await prismaClient.room.update({
+            where: { id: roomId },
+            data: { document }
+        });
+
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: "Error updating document" });
+    }
+});
+
 
 
 
