@@ -517,15 +517,18 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                 color: selectedColor
             };
         } else if (selectedTool === "line" || selectedTool === "arrow") {
-            shape = {
-                type: selectedTool,
-                id: Math.random().toString(36).substring(2, 9),
-                startX: startX,
-                startY: startY,
-                endX: worldPos.x,
-                endY: worldPos.y,
-                color: selectedColor
-            } as Shape;
+            const dragLength = Math.sqrt(Math.pow(worldPos.x - startX, 2) + Math.pow(worldPos.y - startY, 2));
+            if (dragLength > 3) {
+                shape = {
+                    type: selectedTool,
+                    id: Math.random().toString(36).substring(2, 9),
+                    startX: startX,
+                    startY: startY,
+                    endX: worldPos.x,
+                    endY: worldPos.y,
+                    color: selectedColor
+                } as Shape;
+            }
         }
 
         if (shape) {
@@ -979,8 +982,14 @@ function findShapeAt(x: number, y: number, existingShapes: Shape[], ctx: CanvasR
             const height = 20;
             if (x >= shape.x && x <= shape.x + width && y >= shape.y - height && y <= shape.y) return shape;
         } else if (shape.type === "line" || shape.type === "arrow") {
-            const dist = Math.abs((shape.endY - shape.startY) * x - (shape.endX - shape.startX) * y + shape.endX * shape.startY - shape.endY * shape.startX) / Math.sqrt(Math.pow(shape.endY - shape.startY, 2) + Math.pow(shape.endX - shape.startX, 2));
-            if (dist < threshold && x >= Math.min(shape.startX, shape.endX) - threshold && x <= Math.max(shape.startX, shape.endX) + threshold && y >= Math.min(shape.startY, shape.endY) - threshold && y <= Math.max(shape.startY, shape.endY) + threshold) return shape;
+            const len = Math.sqrt(Math.pow(shape.endY - shape.startY, 2) + Math.pow(shape.endX - shape.startX, 2));
+            if (len < 5) {
+                const distToPoint = Math.sqrt(Math.pow(x - shape.startX, 2) + Math.pow(y - shape.startY, 2));
+                if (distToPoint < threshold) return shape;
+            } else {
+                const dist = Math.abs((shape.endY - shape.startY) * x - (shape.endX - shape.startX) * y + shape.endX * shape.startY - shape.endY * shape.startX) / len;
+                if (dist < threshold && x >= Math.min(shape.startX, shape.endX) - threshold && x <= Math.max(shape.startX, shape.endX) + threshold && y >= Math.min(shape.startY, shape.endY) - threshold && y <= Math.max(shape.startY, shape.endY) + threshold) return shape;
+            }
         } else if (shape.type === "image") {
             if (x >= shape.x - threshold && x <= shape.x + shape.width + threshold &&
                 y >= shape.y - threshold && y <= shape.y + shape.height + threshold) {

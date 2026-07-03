@@ -1,9 +1,9 @@
-import { Pencil, Square, Circle, Eraser, Type, MousePointer2, Share2, Check, Download, Image as ImageIcon, FileText, Minus, Hand, Zap, ArrowRight } from "lucide-react";
+import { Pencil, Square, Circle, Eraser, Type, MousePointer2, Share2, Check, Download, Image as ImageIcon, FileText, Minus, Hand, Zap, ArrowRight, MessageSquare } from "lucide-react";
 import { useState } from "react";
 
 export type Tool = "rect" | "circle" | "pencil" | "eraser" | "text" | "select" | "line" | "pan" | "ppt-capture" | "laser" | "arrow";
 
-export function Toolbar({ selectedTool, onSelect, selectedColor, onColorSelect, onDownload, onImageUpload, onResetView, zoom, vertical = false }: { 
+export function Toolbar({ selectedTool, onSelect, selectedColor, onColorSelect, onDownload, onImageUpload, onResetView, zoom, vertical = false, pptOpen = false, onPptToggle, chatOpen = false, onChatToggle }: { 
     selectedTool: Tool, 
     onSelect: (tool: Tool) => void,
     selectedColor: string,
@@ -13,6 +13,10 @@ export function Toolbar({ selectedTool, onSelect, selectedColor, onColorSelect, 
     onResetView: () => void;
     zoom: number;
     vertical?: boolean;
+    pptOpen?: boolean;
+    onPptToggle?: () => void;
+    chatOpen?: boolean;
+    onChatToggle?: () => void;
 }) {
     const [downloadOpen, setDownloadOpen] = useState(false);
     const [copied, setCopied] = useState(false);
@@ -233,6 +237,36 @@ export function Toolbar({ selectedTool, onSelect, selectedColor, onColorSelect, 
                         </div>
                     )}
                 </div>
+
+                {!vertical && onPptToggle && onChatToggle && (
+                    <>
+                        <button 
+                            onClick={onPptToggle}
+                            className={`flex items-center justify-center p-1.5 md:px-3 md:py-1.5 rounded-xl md:rounded-full text-xs md:text-sm font-medium transition-colors shadow-sm border ${
+                                pptOpen 
+                                    ? "bg-indigo-600 border-indigo-700 text-white" 
+                                    : "bg-gray-100 hover:bg-gray-200 text-gray-700 border-transparent"
+                            }`}
+                            title="Toggle PPT Slides"
+                        >
+                            <FileText className="w-4 h-4" />
+                            <span className="hidden lg:inline ml-1">PPT</span>
+                        </button>
+
+                        <button 
+                            onClick={onChatToggle}
+                            className={`flex items-center justify-center p-1.5 md:px-3 md:py-1.5 rounded-xl md:rounded-full text-xs md:text-sm font-medium transition-colors shadow-sm border ${
+                                chatOpen 
+                                    ? "bg-indigo-600 border-indigo-700 text-white" 
+                                    : "bg-gray-100 hover:bg-gray-200 text-gray-700 border-transparent"
+                            }`}
+                            title="Toggle Room Chat"
+                        >
+                            <MessageSquare className="w-4 h-4" />
+                            <span className="hidden lg:inline ml-1">Chat</span>
+                        </button>
+                    </>
+                )}
             </div>
         </div>
     );
