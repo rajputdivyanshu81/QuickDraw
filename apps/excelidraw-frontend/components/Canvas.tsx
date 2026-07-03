@@ -6,7 +6,7 @@ import { Sidebar } from "./Sidebar";
 import jsPDF from "jspdf";
 import { useSearchParams, useRouter } from "next/navigation";
 
-import { Undo, Redo, MessageSquare, FileText, SplitSquareHorizontal, File, PenTool, Sparkles, Home } from "lucide-react";
+import { Undo, Redo, MessageSquare, FileText, SplitSquareHorizontal, File, PenTool, Sparkles, Home, Share2, Check } from "lucide-react";
 import { ChatSidebar } from "./ChatSidebar";
 import { PPTBuilder } from "./PPTBuilder";
 import { VoiceChat } from "./VoiceChat";
@@ -53,6 +53,13 @@ export function Canvas({
     const searchParams = useSearchParams();
     const router = useRouter();
     const problemId = searchParams.get("problemId");
+
+    const [copied, setCopied] = useState(false);
+    const handleCopyLink = () => {
+        navigator.clipboard.writeText(window.location.href);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
 
     const [viewMode, setViewMode] = useState<"canvas" | "document" | "both">(problemId ? "both" : "canvas");
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -257,6 +264,13 @@ export function Canvas({
                     title="Back to Dashboard"
                 >
                     <Home className="w-5 h-5" />
+                </button>
+                <button 
+                    onClick={handleCopyLink}
+                    className="p-2 rounded-lg flex items-center justify-center transition-colors text-gray-400 hover:text-emerald-400 hover:bg-[#2a2a2a]/50"
+                    title={copied ? "Link Copied!" : "Copy Share Link"}
+                >
+                    {copied ? <Check className="w-5 h-5 text-emerald-400 animate-pulse" /> : <Share2 className="w-5 h-5" />}
                 </button>
                 <div className="h-px bg-[#2a2a2a] mx-1" />
                 <button 
