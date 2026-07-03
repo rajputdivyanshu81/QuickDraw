@@ -4,9 +4,9 @@ import { initDraw } from "@/draw";
 import { Toolbar, Tool } from "./Toolbar";
 import { Sidebar } from "./Sidebar";
 import jsPDF from "jspdf";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
-import { Undo, Redo, MessageSquare, FileText, SplitSquareHorizontal, File, PenTool, Sparkles } from "lucide-react";
+import { Undo, Redo, MessageSquare, FileText, SplitSquareHorizontal, File, PenTool, Sparkles, Home } from "lucide-react";
 import { ChatSidebar } from "./ChatSidebar";
 import { PPTBuilder } from "./PPTBuilder";
 import { VoiceChat } from "./VoiceChat";
@@ -51,6 +51,7 @@ export function Canvas({
     }, [myUserInfo]);
 
     const searchParams = useSearchParams();
+    const router = useRouter();
     const problemId = searchParams.get("problemId");
 
     const [viewMode, setViewMode] = useState<"canvas" | "document" | "both">(problemId ? "both" : "canvas");
@@ -250,6 +251,14 @@ export function Canvas({
         <div className="flex w-screen h-screen overflow-hidden bg-[#121212]">
             {/* View Mode Toggle (Top Left - Vertical Layout to prevent Toolbar overlap) */}
             <div className="absolute top-4 left-4 z-[60] flex flex-col bg-[#1e1e1e] border border-[#2a2a2a] rounded-xl p-1 shadow-xl gap-1 bg-[#1e1e1e]/90 backdrop-blur">
+                <button 
+                    onClick={() => router.push("/")}
+                    className="p-2 rounded-lg flex items-center justify-center transition-colors text-gray-400 hover:text-indigo-400 hover:bg-[#2a2a2a]/50"
+                    title="Back to Dashboard"
+                >
+                    <Home className="w-5 h-5" />
+                </button>
+                <div className="h-px bg-[#2a2a2a] mx-1" />
                 <button 
                     onClick={() => setViewMode("document")}
                     className={`p-2 rounded-lg flex items-center justify-center transition-colors ${viewMode === "document" ? "bg-[#2a2a2a] text-indigo-400 border border-[#3a3a3a]" : "text-gray-400 hover:text-gray-200"}`}
