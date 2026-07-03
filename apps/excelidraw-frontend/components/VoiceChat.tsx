@@ -373,7 +373,7 @@ export function VoiceChat({ roomId, socket, userId, userName }: VoiceChatProps) 
     };
 
     return (
-        <div className="fixed bottom-24 right-4 z-[70] flex flex-col items-end gap-3 pointer-events-none">
+        <div className="fixed bottom-6 right-6 z-[70] flex flex-col items-end gap-3 pointer-events-none">
             {/* Participant List */}
             {isInVoice && Object.values(peers).length > 0 && (
                 <div className="flex flex-col gap-2 pointer-events-auto">

@@ -17,7 +17,7 @@ export function RoomCanvas({ roomId }: { roomId: string }) {
 
         const initWs = async () => {
             try {
-                const authToken = await getToken();
+                const authToken = await getToken({ skipCache: true });
                 if (!authToken) {
                     console.error("No auth token received from Clerk");
                     setError("Authentication failed: No token received.");

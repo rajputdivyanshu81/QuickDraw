@@ -1,9 +1,9 @@
-import { Pencil, Square, Circle, Eraser, Type, MousePointer2, Share2, Check, Download, Image as ImageIcon, FileText, Minus, Hand, Zap } from "lucide-react";
+import { Pencil, Square, Circle, Eraser, Type, MousePointer2, Share2, Check, Download, Image as ImageIcon, FileText, Minus, Hand, Zap, ArrowRight, MessageSquare } from "lucide-react";
 import { useState } from "react";
 
-export type Tool = "rect" | "circle" | "pencil" | "eraser" | "text" | "select" | "line" | "pan" | "ppt-capture" | "laser";
+export type Tool = "rect" | "circle" | "pencil" | "eraser" | "text" | "select" | "line" | "pan" | "ppt-capture" | "laser" | "arrow";
 
-export function Toolbar({ selectedTool, onSelect, selectedColor, onColorSelect, onDownload, onImageUpload, onResetView, zoom }: { 
+export function Toolbar({ selectedTool, onSelect, selectedColor, onColorSelect, onDownload, onImageUpload, onResetView, zoom, vertical = false, pptOpen = false, onPptToggle, chatOpen = false, onChatToggle }: { 
     selectedTool: Tool, 
     onSelect: (tool: Tool) => void,
     selectedColor: string,
@@ -12,6 +12,11 @@ export function Toolbar({ selectedTool, onSelect, selectedColor, onColorSelect, 
     onImageUpload: (file: File) => void;
     onResetView: () => void;
     zoom: number;
+    vertical?: boolean;
+    pptOpen?: boolean;
+    onPptToggle?: () => void;
+    chatOpen?: boolean;
+    onChatToggle?: () => void;
 }) {
     const [downloadOpen, setDownloadOpen] = useState(false);
     const [copied, setCopied] = useState(false);
@@ -44,9 +49,25 @@ export function Toolbar({ selectedTool, onSelect, selectedColor, onColorSelect, 
         }
     };
 
+    const containerClasses = vertical
+        ? "fixed right-4 top-1/2 transform -translate-y-1/2 bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl p-3 flex flex-col items-center gap-3 border border-gray-200 z-50 h-auto max-h-[80vh] overflow-y-auto no-scrollbar"
+        : `fixed bottom-6 md:bottom-auto md:top-4 left-1/2 transform -translate-x-1/2 bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl md:rounded-full px-2 py-1.5 md:px-3 md:py-2 flex items-center gap-1.5 md:gap-4 border border-gray-200 z-50 w-[95vw] md:w-auto max-w-full no-scrollbar ${downloadOpen ? 'overflow-visible' : 'overflow-x-auto'}`;
+
+    const toolsWrapperClasses = vertical
+        ? "flex flex-col gap-1.5 border-b border-gray-200 pb-3 shrink-0"
+        : "flex items-center gap-1 md:gap-2 border-r border-gray-200 pr-1.5 md:pr-2 shrink-0";
+
+    const colorsWrapperClasses = vertical
+        ? "flex flex-col items-center gap-1.5 pb-3 border-b border-gray-200 w-full shrink-0"
+        : "flex items-center gap-1 md:gap-2 border-r border-gray-200 pr-1.5 md:pr-2 shrink-0";
+
+    const actionsWrapperClasses = vertical
+        ? "flex flex-col items-center gap-2 shrink-0"
+        : "flex items-center gap-1 md:gap-2 shrink-0";
+
     return (
-        <div onMouseDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()} className={`fixed bottom-6 md:bottom-auto md:top-4 left-1/2 transform -translate-x-1/2 bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl md:rounded-full px-2 py-1.5 md:px-3 md:py-2 flex items-center gap-1.5 md:gap-4 border border-gray-200 z-50 w-[95vw] md:w-auto max-w-full no-scrollbar ${downloadOpen ? 'overflow-visible' : 'overflow-x-auto'}`}>
-            <div className="flex items-center gap-1 md:gap-2 border-r border-gray-200 pr-1.5 md:pr-2 shrink-0">
+        <div onMouseDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()} className={containerClasses}>
+            <div className={toolsWrapperClasses}>
                 <button 
                     onClick={() => onSelect("select")}
                     className={`p-1.5 md:p-2 rounded-xl md:rounded-full hover:bg-gray-100 transition-colors ${selectedTool === "select" ? "bg-indigo-100 text-indigo-600" : "text-gray-600"}`}
@@ -74,6 +95,13 @@ export function Toolbar({ selectedTool, onSelect, selectedColor, onColorSelect, 
                     title="Line (L)"
                 >
                     <Minus className="w-4 h-4 md:w-5 md:h-5" />
+                </button>
+                <button 
+                    onClick={() => onSelect("arrow")}
+                    className={`p-1.5 md:p-2 rounded-xl md:rounded-full hover:bg-gray-100 transition-colors ${selectedTool === "arrow" ? "bg-indigo-100 text-indigo-600" : "text-gray-600"}`}
+                    title="Arrow (A)"
+                >
+                    <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
                 </button>
                 <button 
                     onClick={() => onSelect("rect")}
@@ -112,7 +140,7 @@ export function Toolbar({ selectedTool, onSelect, selectedColor, onColorSelect, 
                 </button>
             </div>
 
-            <div className="flex items-center gap-1 md:gap-2 border-r border-gray-200 pr-1.5 md:pr-2 shrink-0">
+            <div className={colorsWrapperClasses}>
                 {[
                     { name: "Black", value: "black" },
                     { name: "Red", value: "#ef4444" },
@@ -130,30 +158,33 @@ export function Toolbar({ selectedTool, onSelect, selectedColor, onColorSelect, 
                 ))}
             </div>
             
-            <div className="flex items-center gap-1 md:gap-2 shrink-0">
-                <div className="hidden lg:flex items-center space-x-2 px-2 md:px-3 py-1.5 rounded-full bg-gray-50 text-gray-500 text-[10px] md:text-xs font-mono border border-gray-100">
-                    <span>{Math.round(zoom * 100)}%</span>
-                </div>
+            <div className={actionsWrapperClasses}>
+                {!vertical && (
+                    <div className="hidden lg:flex items-center space-x-2 px-2 md:px-3 py-1.5 rounded-full bg-gray-50 text-gray-500 text-[10px] md:text-xs font-mono border border-gray-100">
+                        <span>{Math.round(zoom * 100)}%</span>
+                    </div>
+                )}
 
                 <button 
                     onClick={onResetView}
                     className="flex items-center justify-center p-1.5 md:px-3 md:py-1.5 rounded-xl md:rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs md:text-sm font-medium transition-colors shadow-sm"
                     title="Reset View (Esc)"
                 >
-                    <span className="hidden lg:inline mr-1">Reset View</span>
+                    <span className={vertical ? "hidden" : "hidden lg:inline mr-1"}>Reset View</span>
                     <Hand className="w-4 h-4" />
                 </button>
 
                 <button 
                     onClick={shareCanvas}
                     className="flex items-center justify-center p-1.5 md:px-3 md:py-1.5 rounded-xl md:rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs md:text-sm font-medium transition-colors shadow-sm"
+                    title="Share Room Link"
                 >
                     {copied ? (
-                        <Check className="w-4 h-4 md:mr-1" />
+                        <Check className="w-4 h-4" />
                     ) : (
-                        <Share2 className="w-4 h-4 md:mr-1" />
+                        <Share2 className="w-4 h-4" />
                     )}
-                    <span className="hidden lg:inline">{copied ? "Copied!" : "Share"}</span>
+                    <span className={vertical ? "hidden" : "hidden lg:inline ml-1"}>{copied ? "Copied!" : "Share"}</span>
                 </button>
 
                 <button 
@@ -171,7 +202,7 @@ export function Toolbar({ selectedTool, onSelect, selectedColor, onColorSelect, 
                     title="Upload Image"
                 >
                     <ImageIcon className="w-4 h-4" />
-                    <span className="hidden lg:inline ml-1">Image</span>
+                    <span className={vertical ? "hidden" : "hidden lg:inline ml-1"}>Image</span>
                 </button>
 
                 <div className="relative shrink-0">
@@ -181,11 +212,14 @@ export function Toolbar({ selectedTool, onSelect, selectedColor, onColorSelect, 
                         title="Export Canvas"
                     >
                         <Download className="w-4 h-4" />
-                        <span className="hidden lg:inline ml-1">Download</span>
+                        <span className={vertical ? "hidden" : "hidden lg:inline ml-1"}>Download</span>
                     </button>
 
                     {downloadOpen && (
-                        <div className="absolute right-0 bottom-full mb-2 md:bottom-auto md:top-full md:mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-xl z-[60] py-1 animate-in fade-in zoom-in duration-200 origin-bottom-right md:origin-top-right">
+                        <div className={vertical 
+                            ? "absolute right-full mr-2 bottom-0 w-48 bg-white border border-gray-200 rounded-lg shadow-xl z-[60] py-1 animate-in fade-in zoom-in duration-200 origin-bottom-right"
+                            : "absolute right-0 bottom-full mb-2 md:bottom-auto md:top-full md:mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-xl z-[60] py-1 animate-in fade-in zoom-in duration-200 origin-bottom-right md:origin-top-right"
+                        }>
                             <button 
                                 onClick={() => { console.log("Toolbar selecting PNG"); onDownload("png"); setDownloadOpen(false); }}
                                 className="w-full flex items-center space-x-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
@@ -203,6 +237,36 @@ export function Toolbar({ selectedTool, onSelect, selectedColor, onColorSelect, 
                         </div>
                     )}
                 </div>
+
+                {!vertical && onPptToggle && onChatToggle && (
+                    <>
+                        <button 
+                            onClick={onPptToggle}
+                            className={`flex items-center justify-center p-1.5 md:px-3 md:py-1.5 rounded-xl md:rounded-full text-xs md:text-sm font-medium transition-colors shadow-sm border ${
+                                pptOpen 
+                                    ? "bg-indigo-600 border-indigo-700 text-white" 
+                                    : "bg-gray-100 hover:bg-gray-200 text-gray-700 border-transparent"
+                            }`}
+                            title="Toggle PPT Slides"
+                        >
+                            <FileText className="w-4 h-4" />
+                            <span className="hidden lg:inline ml-1">PPT</span>
+                        </button>
+
+                        <button 
+                            onClick={onChatToggle}
+                            className={`flex items-center justify-center p-1.5 md:px-3 md:py-1.5 rounded-xl md:rounded-full text-xs md:text-sm font-medium transition-colors shadow-sm border ${
+                                chatOpen 
+                                    ? "bg-indigo-600 border-indigo-700 text-white" 
+                                    : "bg-gray-100 hover:bg-gray-200 text-gray-700 border-transparent"
+                            }`}
+                            title="Toggle Room Chat"
+                        >
+                            <MessageSquare className="w-4 h-4" />
+                            <span className="hidden lg:inline ml-1">Chat</span>
+                        </button>
+                    </>
+                )}
             </div>
         </div>
     );

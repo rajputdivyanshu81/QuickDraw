@@ -4,10 +4,12 @@ import { Toolbar, Tool } from "./Toolbar";
 import { Sidebar } from "./Sidebar";
 import jsPDF from "jspdf";
 
-import { Undo, Redo, MessageSquare, FileText } from "lucide-react";
+import { Undo, Redo, MessageSquare, FileText, SplitSquareHorizontal, File, PenTool, Sparkles } from "lucide-react";
 import { ChatSidebar } from "./ChatSidebar";
 import { PPTBuilder } from "./PPTBuilder";
 import { VoiceChat } from "./VoiceChat";
+import { DocumentEditor } from "./DocumentEditor";
+import { Timer } from "./Timer";
 
 export function Canvas({
     roomId,
@@ -46,16 +48,24 @@ export function Canvas({
         console.log("Canvas MyUserInfo:", myUserInfo);
     }, [myUserInfo]);
 
+    const [viewMode, setViewMode] = useState<"canvas" | "document" | "both">("canvas");
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
     useEffect(() => {
-        setDimensions({ width: window.innerWidth, height: window.innerHeight });
-        const handleResize = () => {
-            setDimensions({ width: window.innerWidth, height: window.innerHeight });
+        const updateDimensions = () => {
+            const navHeight = viewMode === "both" ? 56 : 0;
+            if (viewMode === "canvas") {
+                setDimensions({ width: window.innerWidth, height: window.innerHeight - navHeight });
+            } else if (viewMode === "document") {
+                setDimensions({ width: 0, height: window.innerHeight });
+            } else {
+                setDimensions({ width: window.innerWidth / 2, height: window.innerHeight - navHeight });
+            }
         };
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
-    }, []);
+        updateDimensions();
+        window.addEventListener("resize", updateDimensions);
+        return () => window.removeEventListener("resize", updateDimensions);
+    }, [viewMode]);
 
     const [backgroundColor, setBackgroundColor] = useState<string>("#ffffff");
 
@@ -232,100 +242,185 @@ export function Canvas({
     };
 
     return (
-        <div className="relative">
-            <Toolbar 
-                selectedTool={selectedTool} 
-                onSelect={(t) => {
-                    setSelectedTool(t);
-                    if (t !== "ppt-capture") {
-                        // If user manually switches tool, maybe we want to keep PPT sidebar open?
-                    }
-                }} 
-                selectedColor={selectedColor}
-                onColorSelect={(c) => setSelectedColor(c)}
-                onDownload={handleDownload}
-                onImageUpload={handleImageUpload}
-                onResetView={() => drawerRef.current?.resetView()}
-                zoom={zoom}
-            />
-            {/* ... Sidebar ... */}
-            <Sidebar 
-                selectedBgColor={backgroundColor} 
-                onBgColorSelect={setBackgroundColor} 
-            />
-            
-            {/* Top Right Controls */}
-            <div className="absolute top-4 right-4 flex flex-col md:flex-row gap-2 z-10 items-end md:items-center">
-
-                {/* PPT Builder Toggle */}
-                <button
-                    onClick={() => setPptOpen(!pptOpen)}
-                    className={`flex items-center gap-2 p-2 md:px-4 md:py-2 rounded-xl md:rounded-lg shadow-lg transition-colors shrink-0 ${pptOpen ? 'bg-indigo-600 text-white' : 'bg-white/90 text-gray-700 hover:bg-gray-50 border border-gray-200'}`}
+        <div className="flex w-screen h-screen overflow-hidden bg-[#121212]">
+            {/* View Mode Toggle (Top Left - Vertical Layout to prevent Toolbar overlap) */}
+            <div className="absolute top-4 left-4 z-[60] flex flex-col bg-[#1e1e1e] border border-[#2a2a2a] rounded-xl p-1 shadow-xl gap-1 bg-[#1e1e1e]/90 backdrop-blur">
+                <button 
+                    onClick={() => setViewMode("document")}
+                    className={`p-2 rounded-lg flex items-center justify-center transition-colors ${viewMode === "document" ? "bg-[#2a2a2a] text-indigo-400 border border-[#3a3a3a]" : "text-gray-400 hover:text-gray-200"}`}
+                    title="Document Only"
                 >
-                    <FileText className="w-5 h-5 md:hidden" />
-                    <span className="font-medium hidden md:inline text-sm">PPT</span>
+                    <File className="w-5 h-5" />
                 </button>
-
-                {/* Chat Toggle */}
-                <button
-                    onClick={() => setChatOpen(true)}
-                    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white p-2 md:px-4 md:py-2 rounded-xl md:rounded-lg shadow-lg transition-colors shrink-0"
+                <button 
+                    onClick={() => setViewMode("both")}
+                    className={`p-2 rounded-lg flex items-center justify-center transition-colors ${viewMode === "both" ? "bg-[#2a2a2a] text-indigo-400 border border-[#3a3a3a]" : "text-gray-400 hover:text-gray-200"}`}
+                    title="Split View"
                 >
-                    <MessageSquare className="w-5 h-5" />
-                    <span className="hidden md:inline font-medium text-sm">Chat</span>
+                    <SplitSquareHorizontal className="w-5 h-5" />
+                </button>
+                <button 
+                    onClick={() => setViewMode("canvas")}
+                    className={`p-2 rounded-lg flex items-center justify-center transition-colors ${viewMode === "canvas" ? "bg-[#2a2a2a] text-indigo-400 border border-[#3a3a3a]" : "text-gray-400 hover:text-gray-200"}`}
+                    title="Canvas Only"
+                >
+                    <PenTool className="w-5 h-5" />
                 </button>
             </div>
 
-            <PPTBuilder 
-                isOpen={pptOpen} 
-                onClose={() => setPptOpen(false)}
-                onCaptureRequest={() => setSelectedTool("ppt-capture")}
-                slides={slides}
-                onDeleteSlide={handleDeleteSlide}
-            />
-
-            <ChatSidebar 
-                isOpen={chatOpen} 
-                onClose={() => setChatOpen(false)} 
-                roomId={roomId} 
-                socket={socket}
-                userId={myUserInfo.userId}
-            />
-
-            <VoiceChat 
-                roomId={roomId} 
-                socket={socket} 
-                userId={myUserInfo.userId}
-                userName={myUserInfo.name}
-            />
-
-            {/* Bottom Left Controls (Undo/Redo) */}
-            <div className="fixed bottom-24 md:bottom-8 left-4 flex flex-col gap-2 z-50">
-                <div className="flex flex-col gap-1 bg-white/90 backdrop-blur-sm p-1.5 rounded-2xl shadow-xl border border-gray-200">
-                    <button 
-                        onClick={() => drawerRef.current?.undo()}
-                        className="p-2.5 hover:bg-gray-100 rounded-xl transition-colors text-gray-700"
-                        title="Undo (Ctrl+Z)"
-                    >
-                        <Undo className="w-5 h-5" />
-                    </button>
-                    <div className="h-px bg-gray-100 mx-1"></div>
-                    <button 
-                        onClick={() => drawerRef.current?.redo()}
-                        className="p-2.5 hover:bg-gray-100 rounded-xl transition-colors text-gray-700"
-                        title="Redo (Ctrl+Y)"
-                    >
-                        <Redo className="w-5 h-5" />
-                    </button>
+            {/* Document Panel */}
+            {viewMode !== "canvas" && (
+                <div className={`${viewMode === "both" ? "w-1/2" : "w-full"} h-full`}>
+                    <DocumentEditor roomId={roomId} />
                 </div>
-            </div>
+            )}
 
-            <canvas 
-                ref={canvasRef} 
-                width={dimensions.width} 
-                height={dimensions.height} 
-                className={`bg-white border border-gray-200 shadow-inner ${selectedTool === "ppt-capture" ? "cursor-crosshair" : ""}`}
-            ></canvas>
+            {/* Canvas Panel */}
+            {viewMode !== "document" && (
+                <div className={`relative h-full ${viewMode === "both" ? "w-1/2" : "w-full"} flex flex-col`}>
+                    
+                    {/* Whiteboard Header Navbar (only in split screen) */}
+                    {viewMode === "both" && (
+                        <div className="w-full h-14 bg-[#1e1e1e] border-b border-[#2a2a2a] flex items-center justify-between px-4 z-[45] shrink-0">
+                            {/* Left Side: Background Color Picker & Undo/Redo */}
+                            <div className="flex items-center gap-3">
+                                <Sidebar 
+                                    selectedBgColor={backgroundColor} 
+                                    onBgColorSelect={setBackgroundColor} 
+                                    inline={true}
+                                />
+                                <div className="w-px h-5 bg-[#2a2a2a]" />
+                                <div className="flex bg-[#2a2a2a]/60 border border-[#2a2a2a] rounded-lg p-0.5">
+                                    <button 
+                                        onClick={() => drawerRef.current?.undo()} 
+                                        className="p-1.5 hover:bg-[#2a2a2a] text-gray-400 hover:text-white rounded transition-colors" 
+                                        title="Undo (Ctrl+Z)"
+                                    >
+                                        <Undo className="w-4 h-4" />
+                                    </button>
+                                    <div className="w-px h-4 bg-[#2a2a2a] my-auto" />
+                                    <button 
+                                        onClick={() => drawerRef.current?.redo()} 
+                                        className="p-1.5 hover:bg-[#2a2a2a] text-gray-400 hover:text-white rounded transition-colors" 
+                                        title="Redo (Ctrl+Y)"
+                                    >
+                                        <Redo className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Right Side: AI Assistant, PPT, Chat */}
+                            <div className="flex items-center gap-2">
+                                <button 
+                                    onClick={() => window.dispatchEvent(new CustomEvent("open-ai-chat"))}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-lg text-xs font-semibold shadow transition-all active:scale-95 shrink-0"
+                                >
+                                    <Sparkles className="w-3.5 h-3.5" />
+                                    <span>AI Assistant</span>
+                                </button>
+                                <button 
+                                    onClick={() => setPptOpen(!pptOpen)} 
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all shrink-0 ${
+                                        pptOpen 
+                                            ? 'bg-indigo-600 border-indigo-700 text-white' 
+                                            : 'bg-[#2a2a2a] border-[#3a3a3a] text-gray-300 hover:text-white'
+                                    }`}
+                                >
+                                    <FileText className="w-3.5 h-3.5" />
+                                    <span>PPT</span>
+                                </button>
+                                <button 
+                                    onClick={() => setChatOpen(true)} 
+                                    className="flex items-center gap-1.5 bg-[#2a2a2a] hover:bg-[#323232] text-gray-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-semibold border border-[#3a3a3a] transition-all shrink-0"
+                                >
+                                    <MessageSquare className="w-3.5 h-3.5" />
+                                    <span>Chat</span>
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Floating Controls for Canvas Only mode */}
+                    {viewMode === "canvas" && (
+                        <>
+                            {/* Floating Sidebar (Palette) */}
+                            <Sidebar 
+                                selectedBgColor={backgroundColor} 
+                                onBgColorSelect={setBackgroundColor} 
+                                inline={false}
+                            />
+
+                            {/* Floating Undo/Redo */}
+                            <div className="absolute bottom-24 md:bottom-8 left-4 z-50 flex flex-col gap-2 bg-white/90 backdrop-blur-sm p-1.5 rounded-2xl shadow-xl border border-gray-200">
+                                <button 
+                                    onClick={() => drawerRef.current?.undo()}
+                                    className="p-2.5 hover:bg-gray-100 rounded-xl transition-colors text-gray-700"
+                                    title="Undo (Ctrl+Z)"
+                                >
+                                    <Undo className="w-5 h-5" />
+                                </button>
+                                <div className="h-px bg-gray-100 mx-1" />
+                                <button 
+                                    onClick={() => drawerRef.current?.redo()}
+                                    className="p-2.5 hover:bg-gray-100 rounded-xl transition-colors text-gray-700"
+                                    title="Redo (Ctrl+Y)"
+                                >
+                                    <Redo className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </>
+                    )}
+
+                    <Toolbar 
+                        selectedTool={selectedTool} 
+                        onSelect={(t) => setSelectedTool(t)} 
+                        selectedColor={selectedColor}
+                        onColorSelect={(c) => setSelectedColor(c)}
+                        onDownload={handleDownload}
+                        onImageUpload={handleImageUpload}
+                        onResetView={() => drawerRef.current?.resetView()}
+                        zoom={zoom}
+                        vertical={viewMode === "both"}
+                        pptOpen={pptOpen}
+                        onPptToggle={() => setPptOpen(!pptOpen)}
+                        chatOpen={chatOpen}
+                        onChatToggle={() => setChatOpen(!chatOpen)}
+                    />
+
+                    <PPTBuilder 
+                        isOpen={pptOpen} 
+                        onClose={() => setPptOpen(false)}
+                        onCaptureRequest={() => setSelectedTool("ppt-capture")}
+                        slides={slides}
+                        onDeleteSlide={handleDeleteSlide}
+                    />
+
+                    <ChatSidebar 
+                        isOpen={chatOpen} 
+                        onClose={() => setChatOpen(false)} 
+                        roomId={roomId} 
+                        socket={socket}
+                        userId={myUserInfo.userId}
+                    />
+
+                    <VoiceChat 
+                        roomId={roomId} 
+                        socket={socket} 
+                        userId={myUserInfo.userId}
+                        userName={myUserInfo.name}
+                    />
+
+                    <canvas 
+                        ref={canvasRef} 
+                        width={dimensions.width} 
+                        height={dimensions.height} 
+                        className={`border-l border-gray-200 shadow-inner ${selectedTool === "ppt-capture" ? "cursor-crosshair" : ""}`}
+                    ></canvas>
+                </div>
+            )}
+            
+            {/* Global Draggable Floating Timer */}
+            <Timer />
         </div>
     );
 }

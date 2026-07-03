@@ -25,6 +25,7 @@ export async function middleware(req: CustomRequest, res: Response, next: NextFu
 
         const decoded = await verifyToken(jwt, {
             secretKey: process.env.CLERK_SECRET_KEY,
+            clockSkewInMs: 600000, // 10 minutes leeway for clock skew in local dev
         });
 
         if (!decoded || !decoded.sub) {

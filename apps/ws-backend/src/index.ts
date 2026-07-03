@@ -27,6 +27,7 @@ async function checkUser(token: string): Promise<{ userId: string, email: string
   try {
     const decoded = await verifyToken(token, {
       secretKey: secretKey,
+      clockSkewInMs: 600000, // 10 minutes leeway for clock skew in local dev
     });
     return {
       userId: decoded.sub,
