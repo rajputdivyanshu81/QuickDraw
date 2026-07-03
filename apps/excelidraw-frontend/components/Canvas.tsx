@@ -3,6 +3,7 @@ import { initDraw } from "@/draw";
 import { Toolbar, Tool } from "./Toolbar";
 import { Sidebar } from "./Sidebar";
 import jsPDF from "jspdf";
+import { useSearchParams } from "next/navigation";
 
 import { Undo, Redo, MessageSquare, FileText, SplitSquareHorizontal, File, PenTool, Sparkles } from "lucide-react";
 import { ChatSidebar } from "./ChatSidebar";
@@ -48,7 +49,10 @@ export function Canvas({
         console.log("Canvas MyUserInfo:", myUserInfo);
     }, [myUserInfo]);
 
-    const [viewMode, setViewMode] = useState<"canvas" | "document" | "both">("canvas");
+    const searchParams = useSearchParams();
+    const problemId = searchParams.get("problemId");
+
+    const [viewMode, setViewMode] = useState<"canvas" | "document" | "both">(problemId ? "both" : "canvas");
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
     useEffect(() => {
