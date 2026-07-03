@@ -76,7 +76,7 @@ export function AIHelp() {
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={toggleChat}
-                    className="fixed top-16 md:top-4 left-4 z-[9999] flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-4 py-2.5 rounded-full shadow-lg hover:shadow-xl transition-all font-medium"
+                    className="fixed bottom-24 md:bottom-8 left-20 z-[9999] flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-4 py-2.5 rounded-full shadow-lg hover:shadow-xl transition-all font-medium"
                 >
                     <Bot className="w-5 h-5" />
                     <span>AI Help</span>
