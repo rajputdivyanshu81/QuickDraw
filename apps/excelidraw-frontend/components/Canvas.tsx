@@ -1,3 +1,4 @@
+"use client";
 import {useEffect, useRef, useState, useMemo} from "react";
 import { initDraw } from "@/draw";
 import { Toolbar, Tool } from "./Toolbar";

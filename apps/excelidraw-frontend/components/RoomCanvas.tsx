@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { Canvas } from "./Canvas";
 import { WS_URL } from "@/config";
@@ -76,8 +76,15 @@ export function RoomCanvas({ roomId }: { roomId: string }) {
         );
     }
     return (
-        <div className="h-screen w-screen overflow-hidden">
-            <Canvas roomId={roomId} socket={socket} token={token} />
+        <div className="h-screen w-screen overflow-hidden bg-[#121212]">
+            <Suspense fallback={
+                <div className="flex flex-col justify-center items-center h-screen bg-[#121212] text-gray-200">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mb-4"></div>
+                    <p className="text-lg">Initializing canvas workspace...</p>
+                </div>
+            }>
+                <Canvas roomId={roomId} socket={socket} token={token} />
+            </Suspense>
         </div>
     );
 }
