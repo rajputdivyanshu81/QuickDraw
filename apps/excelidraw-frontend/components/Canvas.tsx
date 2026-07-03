@@ -305,6 +305,7 @@ export function Canvas({
                         onImageUpload={handleImageUpload}
                         onResetView={() => drawerRef.current?.resetView()}
                         zoom={zoom}
+                        vertical={viewMode === "both"}
                     />
                     <Sidebar 
                         selectedBgColor={backgroundColor} 
