@@ -1,10 +1,12 @@
+"use client";
 import {useEffect, useRef, useState, useMemo} from "react";
 import { initDraw } from "@/draw";
 import { Toolbar, Tool } from "./Toolbar";
 import { Sidebar } from "./Sidebar";
 import jsPDF from "jspdf";
+import { useSearchParams, useRouter } from "next/navigation";
 
-import { Undo, Redo, MessageSquare, FileText, SplitSquareHorizontal, File, PenTool, Sparkles } from "lucide-react";
+import { Undo, Redo, MessageSquare, FileText, SplitSquareHorizontal, File, PenTool, Sparkles, Home, Share2, Check } from "lucide-react";
 import { ChatSidebar } from "./ChatSidebar";
 import { PPTBuilder } from "./PPTBuilder";
 import { VoiceChat } from "./VoiceChat";
@@ -48,7 +50,18 @@ export function Canvas({
         console.log("Canvas MyUserInfo:", myUserInfo);
     }, [myUserInfo]);
 
-    const [viewMode, setViewMode] = useState<"canvas" | "document" | "both">("canvas");
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const problemId = searchParams.get("problemId");
+
+    const [copied, setCopied] = useState(false);
+    const handleCopyLink = () => {
+        navigator.clipboard.writeText(window.location.href);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    const [viewMode, setViewMode] = useState<"canvas" | "document" | "both">(problemId ? "both" : "canvas");
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
     const [splitRatio, setSplitRatio] = useState(50);
     const [isResizingSplit, setIsResizingSplit] = useState(false);
@@ -279,6 +292,21 @@ export function Canvas({
         <div className="flex w-screen h-screen overflow-hidden bg-[#121212]">
             {/* View Mode Toggle (Top Left - Vertical Layout to prevent Toolbar overlap) */}
             <div className="absolute top-4 left-4 z-[60] flex flex-col bg-[#1e1e1e] border border-[#2a2a2a] rounded-xl p-1 shadow-xl gap-1 bg-[#1e1e1e]/90 backdrop-blur">
+                <button 
+                    onClick={() => router.push("/")}
+                    className="p-2 rounded-lg flex items-center justify-center transition-colors text-gray-400 hover:text-indigo-400 hover:bg-[#2a2a2a]/50"
+                    title="Back to Dashboard"
+                >
+                    <Home className="w-5 h-5" />
+                </button>
+                <button 
+                    onClick={handleCopyLink}
+                    className="p-2 rounded-lg flex items-center justify-center transition-colors text-gray-400 hover:text-emerald-400 hover:bg-[#2a2a2a]/50"
+                    title={copied ? "Link Copied!" : "Copy Share Link"}
+                >
+                    {copied ? <Check className="w-5 h-5 text-emerald-400 animate-pulse" /> : <Share2 className="w-5 h-5" />}
+                </button>
+                <div className="h-px bg-[#2a2a2a] mx-1" />
                 <button 
                     onClick={() => setViewMode("document")}
                     className={`p-2 rounded-lg flex items-center justify-center transition-colors ${viewMode === "document" ? "bg-[#2a2a2a] text-indigo-400 border border-[#3a3a3a]" : "text-gray-400 hover:text-gray-200"}`}

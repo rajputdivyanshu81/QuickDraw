@@ -4,6 +4,8 @@ import { useAuth } from "@clerk/nextjs";
 import axios from "axios";
 import { HTTP_BACKEND } from "@/config";
 import { Heading1, Heading2, Heading3, List, ListOrdered, Code, Terminal, Sparkles, ChevronDown, Plus, AlignLeft } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { SYSTEM_DESIGN_PROBLEMS } from "@/config/problems";
 
 export function DocumentEditor({ roomId }: { roomId: string }) {
     const { getToken } = useAuth();
@@ -13,6 +15,47 @@ export function DocumentEditor({ roomId }: { roomId: string }) {
     const editorRef = useRef<HTMLDivElement>(null);
     const lastPushedContent = useRef("");
     const isLocalChange = useRef(false);
+
+    const searchParams = useSearchParams();
+    const problemId = searchParams.get("problemId");
+    const problem = problemId ? SYSTEM_DESIGN_PROBLEMS.find(p => p.id === problemId) : null;
+
+    const getSpecCardHTML = () => {
+        if (!problem) return "";
+        return `<div contenteditable="false" class="bg-[#1a1a1a]/85 border border-[#2a2a2a] p-5 rounded-2xl mb-6 select-text prose prose-invert text-sm max-w-none shadow-xl shadow-black/20 text-gray-300">
+            <div class="flex items-center gap-2 mb-3 select-none">
+                <span class="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-400">System Design Practice</span>
+                <span class="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full border border-gray-700 bg-gray-800 text-gray-300">${problem.difficulty}</span>
+            </div>
+            <h1 class="text-xl font-bold text-white mb-2 tracking-tight">${problem.title}</h1>
+            <p class="text-gray-400 italic mb-4 text-xs leading-relaxed">${problem.description}</p>
+            
+            <div class="h-px bg-[#2a2a2a] my-4"></div>
+            
+            <div class="space-y-4">
+                <div class="mb-3">
+                    <h3 class="text-xs uppercase font-extrabold tracking-wider text-gray-400 mb-1.5">Functional Requirements</h3>
+                    <ul class="list-disc pl-5 space-y-1 text-gray-300 text-xs">
+                        ${problem.functionalRequirements.map(r => `<li>${r}</li>`).join("")}
+                    </ul>
+                </div>
+                
+                <div class="mb-3">
+                    <h3 class="text-xs uppercase font-extrabold tracking-wider text-gray-400 mb-1.5">Non-Functional Requirements</h3>
+                    <ul class="list-disc pl-5 space-y-1 text-gray-300 text-xs">
+                        ${problem.nonFunctionalRequirements.map(r => `<li>${r}</li>`).join("")}
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="text-xs uppercase font-extrabold tracking-wider text-gray-400 mb-1.5 font-mono">Assumed Scale Metrics</h3>
+                    <ul class="list-none pl-0 space-y-1 font-mono text-[11px] text-indigo-300/90">
+                        ${problem.scaleEstimations.map(est => `<li>&gt; ${est}</li>`).join("")}
+                    </ul>
+                </div>
+            </div>
+        </div>`;
+    };
 
     // Initial fetch
     useEffect(() => {
@@ -26,7 +69,12 @@ export function DocumentEditor({ roomId }: { roomId: string }) {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 if (mounted) {
-                    const htmlContent = res.data.document || "<div><br></div>";
+                    let htmlContent = res.data.document || "<div><br></div>";
+                    if (problem && !htmlContent.includes('contenteditable="false"')) {
+                        htmlContent = getSpecCardHTML() + "<div>// Write your system design notes or API designs here...<br></div>" + (htmlContent === "<div><br></div>" ? "" : htmlContent);
+                        // Sync back to database immediately
+                        axios.put(`${HTTP_BACKEND}/document/${roomId}`, { document: htmlContent }, { headers: { Authorization: `Bearer ${token}` } }).catch(e => console.error(e));
+                    }
                     setContent(htmlContent);
                     lastPushedContent.current = htmlContent;
                     if (editorRef.current && editorRef.current.innerHTML !== htmlContent) {
@@ -39,7 +87,7 @@ export function DocumentEditor({ roomId }: { roomId: string }) {
         };
         fetchDoc();
         return () => { mounted = false; };
-    }, [roomId, getToken]);
+    }, [roomId, getToken, problem]);
 
     // Polling
     useEffect(() => {
@@ -54,7 +102,12 @@ export function DocumentEditor({ roomId }: { roomId: string }) {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 
-                const remoteContent = res.data.document || "<div><br></div>";
+                let remoteContent = res.data.document || "<div><br></div>";
+                if (problem && !remoteContent.includes('contenteditable="false"')) {
+                    remoteContent = getSpecCardHTML() + "<div>// Write your system design notes or API designs here...<br></div>" + (remoteContent === "<div><br></div>" ? "" : remoteContent);
+                    // Sync back to database immediately
+                    axios.put(`${HTTP_BACKEND}/document/${roomId}`, { document: remoteContent }, { headers: { Authorization: `Bearer ${token}` } }).catch(e => console.error(e));
+                }
                 if (remoteContent !== content && remoteContent !== lastPushedContent.current) {
                     setContent(remoteContent);
                     lastPushedContent.current = remoteContent;
@@ -141,11 +194,13 @@ export function DocumentEditor({ roomId }: { roomId: string }) {
     return (
         <div className="w-full h-full bg-[#121212] flex flex-col p-6 border-r border-[#2a2a2a] relative z-10">
             <div className="flex justify-between items-center mb-4 shrink-0 pl-16">
-                <h2 className="text-gray-300 font-semibold text-lg flex items-center gap-2.5">
-                    <div className="bg-indigo-950/60 border border-indigo-500/30 p-2 rounded-xl text-indigo-400 shadow-lg shadow-indigo-500/10 flex items-center justify-center animate-pulse">
+                <h2 className="text-gray-300 font-semibold text-lg flex items-center gap-2.5 max-w-[80%]">
+                    <div className="bg-indigo-950/60 border border-indigo-500/30 p-2 rounded-xl text-indigo-400 shadow-lg shadow-indigo-500/10 flex items-center justify-center animate-pulse shrink-0">
                         <Sparkles className="w-4.5 h-4.5" />
                     </div> 
-                    <span className="bg-gradient-to-r from-indigo-200 via-slate-100 to-white bg-clip-text text-transparent font-bold tracking-tight text-lg">QuickDraft</span>
+                    <span className="bg-gradient-to-r from-indigo-200 via-slate-100 to-white bg-clip-text text-transparent font-bold tracking-tight text-lg truncate">
+                        {problem ? problem.title : "QuickDraft"}
+                    </span>
                 </h2>
                 {isSaving && <span className="text-xs text-indigo-400 animate-pulse font-mono">Syncing...</span>}
             </div>
