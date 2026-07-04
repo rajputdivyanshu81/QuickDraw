@@ -41,7 +41,7 @@ type Shape = ({
     height: number;
 }) & { id: string; color?: string };
 
-export type Tool = "rect" | "circle" | "pencil" | "eraser" | "text" | "select" | "line" | "pan" | "ppt-capture" | "laser" | "arrow" | "marquee-copy";
+export type Tool = "rect" | "circle" | "pencil" | "eraser" | "text" | "select" | "line" | "pan" | "ppt-capture" | "laser" | "arrow" | "marquee-copy" | "lasso-copy";
 
 type LaserPointerData = {
     points: { x: number, y: number, timestamp: number }[],

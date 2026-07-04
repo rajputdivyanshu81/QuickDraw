@@ -1,7 +1,7 @@
-import { Pencil, Square, Circle, Eraser, Type, MousePointer2, Share2, Check, Download, Image as ImageIcon, FileText, Minus, Hand, Zap, ArrowRight, MessageSquare } from "lucide-react";
+import { Pencil, Square, Circle, Eraser, Type, MousePointer2, Share2, Check, Download, Image as ImageIcon, FileText, Minus, Hand, Zap, ArrowRight, MessageSquare, Scissors } from "lucide-react";
 import { useState } from "react";
 
-export type Tool = "rect" | "circle" | "pencil" | "eraser" | "text" | "select" | "line" | "pan" | "ppt-capture" | "laser" | "arrow";
+export type Tool = "rect" | "circle" | "pencil" | "eraser" | "text" | "select" | "line" | "pan" | "ppt-capture" | "laser" | "arrow" | "lasso-copy";
 
 export function Toolbar({ selectedTool, onSelect, selectedColor, onColorSelect, onDownload, onImageUpload, onResetView, zoom, vertical = false, pptOpen = false, onPptToggle, chatOpen = false, onChatToggle }: { 
     selectedTool: Tool, 
@@ -74,6 +74,13 @@ export function Toolbar({ selectedTool, onSelect, selectedColor, onColorSelect, 
                     title="Select (V)"
                 >
                     <MousePointer2 className="w-4 h-4 md:w-5 md:h-5" />
+                </button>
+                <button 
+                    onClick={() => onSelect("lasso-copy")}
+                    className={`p-1.5 md:p-2 rounded-xl md:rounded-full hover:bg-gray-100 transition-colors ${selectedTool === "lasso-copy" ? "bg-indigo-100 text-indigo-600" : "text-gray-600"}`}
+                    title="Lasso Copy"
+                >
+                    <Scissors className="w-4 h-4 md:w-5 md:h-5" />
                 </button>
                 <button 
                     onClick={() => onSelect("pan")}
