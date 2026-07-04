@@ -41,7 +41,7 @@ type Shape = ({
     height: number;
 }) & { id: string; color?: string };
 
-export type Tool = "rect" | "circle" | "pencil" | "eraser" | "text" | "select" | "line" | "pan" | "ppt-capture" | "laser" | "arrow";
+export type Tool = "rect" | "circle" | "pencil" | "eraser" | "text" | "select" | "line" | "pan" | "ppt-capture" | "laser" | "arrow" | "marquee-copy" | "lasso-copy";
 
 type LaserPointerData = {
     points: { x: number, y: number, timestamp: number }[],
@@ -114,14 +114,14 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
             if (existingShapes.some(s => s.id === newShape.id)) return;
 
             existingShapes.push(newShape);
-            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
+            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers, selectedShapes);
         } else if (parsedData.type === "delete_shape") {
             const shapeId = parsedData.shapeId;
             const index = existingShapes.findIndex(s => s.id === shapeId);
             if (index !== -1) {
                 existingShapes.splice(index, 1);
             }
-            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
+            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers, selectedShapes);
         } else if (parsedData.type === "update_shape") {
             const updatedShape = parsedData.shape;
             const index = existingShapes.findIndex(s => s.id === updatedShape.id);
@@ -130,7 +130,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
             } else {
                 existingShapes.push(updatedShape);
             }
-            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
+            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers, selectedShapes);
         } else if (parsedData.type === "laser_pointer") {
             const userId = parsedData.userId;
             const existing = laserPointers.get(userId);
@@ -148,7 +148,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                     lastUpdate: Date.now()
                 });
             }
-            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
+            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers, selectedShapes);
         }
     }
 
@@ -158,7 +158,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                 existingShapes.push(shape);
             }
         });
-        clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
+        clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers, selectedShapes);
     }).catch((e: any) => {
         console.error("Failed to fetch existing shapes", e);
         if (e.response) {
@@ -178,7 +178,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
             }
         }
         if (changed || laserPointers.size > 0) {
-            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
+            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers, selectedShapes);
         }
     }, 50);
 
@@ -200,9 +200,12 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
     let startX = 0;
     let startY = 0;
     let currentPath: { x: number, y: number }[] = [];
-
+    let copiedShapes: Shape[] = [];
     let selectedShape: Shape | null = null;
+    let selectedShapes: Shape[] = [];
+    let startDragShapes: Shape[] | null = null;
     let startDragShape: Shape | null = null;
+    let startDragShapeBox: { x: number, y: number, width: number, height: number } | null = null;
     let dragOffsetX = 0;
     let dragOffsetY = 0;
     let isResizing = false;
@@ -211,9 +214,88 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
     let isSpacePressed = false;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.repeat) return;
+        
         if (e.code === "Space" && !isSpacePressed) {
             isSpacePressed = true;
             canvas.style.cursor = "grab";
+            return;
+        }
+
+        // Prevent copying/pasting/deleting if editing text inputs or rich doc editor
+        if (document.activeElement && (
+            document.activeElement.tagName === "INPUT" || 
+            document.activeElement.tagName === "TEXTAREA" || 
+            document.activeElement.getAttribute("contenteditable") === "true"
+        )) {
+            return;
+        }
+
+        if ((e.ctrlKey || e.metaKey) && e.key === "c") {
+            // Copy Shape
+            if (selectedTool === "select" && selectedShape) {
+                copiedShapes = [JSON.parse(JSON.stringify(selectedShape))];
+                e.preventDefault();
+            }
+        } else if ((e.ctrlKey || e.metaKey) && e.key === "v") {
+            // Paste Shape
+            if (copiedShapes.length > 0) {
+                e.preventDefault();
+                const pastedShapes = [];
+                for (const shape of copiedShapes) {
+                    const newShape = JSON.parse(JSON.stringify(shape));
+                    
+                    // Assign a new unique ID
+                    newShape.id = Math.random().toString(36).substring(2, 9);
+                    
+                    // Offset position to avoid exact overlapping
+                    if (newShape.type === "rect" || newShape.type === "text" || newShape.type === "image" || newShape.type === "line" || newShape.type === "arrow") {
+                        newShape.x += 20;
+                        newShape.y += 20;
+                        if (newShape.type === "line" || newShape.type === "arrow") {
+                            newShape.endX += 20;
+                            newShape.endY += 20;
+                        }
+                    } else if (newShape.type === "circle") {
+                        newShape.centerX += 20;
+                        newShape.centerY += 20;
+                    } else if (newShape.type === "pencil") {
+                        newShape.points = newShape.points.map((p: any) => ({
+                            x: p.x + 20,
+                            y: p.y + 20
+                        }));
+                    }
+                    
+                    existingShapes.push(newShape);
+                    pastedShapes.push(newShape);
+                    addToHistory({ type: "add", shape: newShape });
+
+                    if (onCapture) {
+                        onCapture(newShape);
+                    }
+                }
+                
+                selectedShapes = pastedShapes;
+                selectedShape = null;
+                clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers, selectedShapes);
+            }
+        } else if (e.key === "Delete" || e.key === "Backspace") {
+            // Delete Shape
+            if (selectedTool === "select" && selectedShape) {
+                e.preventDefault();
+                const index = existingShapes.findIndex(s => s.id === selectedShape!.id);
+                if (index !== -1) {
+                    const removedShape = existingShapes.splice(index, 1)[0];
+                    addToHistory({ type: "delete", shape: removedShape });
+                    socket.send(JSON.stringify({
+                        type: "delete_shape",
+                        shapeId: removedShape.id,
+                        roomId
+                    }));
+                    selectedShape = null;
+                    clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers, selectedShapes);
+                }
+            }
         }
     };
 
@@ -246,49 +328,72 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
         startY = worldPos.y;
 
         if (selectedTool === "select") {
-            selectedShape = findShapeAt(worldPos.x, worldPos.y, existingShapes, ctx);
-            if (selectedShape) {
-                // Deep copy for undo history
-                startDragShape = JSON.parse(JSON.stringify(selectedShape));
-
-                if (selectedShape.type === "rect") {
-                    dragOffsetX = worldPos.x - selectedShape.x;
-                    dragOffsetY = worldPos.y - selectedShape.y;
-                } else if (selectedShape.type === "circle") {
-                    dragOffsetX = worldPos.x - selectedShape.centerX;
-                    dragOffsetY = worldPos.y - selectedShape.centerY;
-                } else if (selectedShape.type === "text") {
-                    dragOffsetX = worldPos.x - selectedShape.x;
-                    dragOffsetY = worldPos.y - selectedShape.y;
-                } else if (selectedShape.type === "pencil") {
-                    dragOffsetX = worldPos.x;
-                    dragOffsetY = worldPos.y;
-                } else if (selectedShape.type === "image") {
-                    // Check for resize handles
-                    const handleSize = 8 / camera.scale;
+            if (selectedShape && (selectedShape.type === "image" || selectedShape.type === "rect" || selectedShape.type === "pencil")) {
+                const handleSize = 8 / camera.scale;
+                let hX, hY, hW, hH;
+                if (selectedShape.type === "pencil") {
+                    const box = getShapeBoundingBox(selectedShape, ctx);
+                    if (box) { hX = box.x; hY = box.y; hW = box.width; hH = box.height; }
+                } else {
+                    hX = selectedShape.x; hY = selectedShape.y; hW = selectedShape.width; hH = selectedShape.height;
+                }
+                
+                if (hX !== undefined && hY !== undefined && hW !== undefined && hH !== undefined) {
                     const handles = [
-                        { id: "nw" as const, x: selectedShape.x, y: selectedShape.y },
-                        { id: "ne" as const, x: selectedShape.x + selectedShape.width, y: selectedShape.y },
-                        { id: "sw" as const, x: selectedShape.x, y: selectedShape.y + selectedShape.height },
-                        { id: "se" as const, x: selectedShape.x + selectedShape.width, y: selectedShape.y + selectedShape.height }
+                        { id: "nw" as const, x: hX, y: hY },
+                        { id: "ne" as const, x: hX + hW, y: hY },
+                        { id: "sw" as const, x: hX, y: hY + hH },
+                        { id: "se" as const, x: hX + hW, y: hY + hH }
                     ];
-
                     const clickedHandle = handles.find(h =>
                         worldPos.x >= h.x - handleSize && worldPos.x <= h.x + handleSize &&
                         worldPos.y >= h.y - handleSize && worldPos.y <= h.y + handleSize
                     );
-
                     if (clickedHandle) {
                         isResizing = true;
                         resizeHandle = clickedHandle.id;
-                    } else {
+                        startDragShape = JSON.parse(JSON.stringify(selectedShape));
+                        if (startDragShape?.type === "pencil") {
+                            startDragShapeBox = getShapeBoundingBox(startDragShape, ctx) || null;
+                        } else {
+                            startDragShapeBox = null;
+                        }
+                        return;
+                    }
+                }
+            }
+
+            const clickedShape = findShapeAt(worldPos.x, worldPos.y, existingShapes, ctx);
+            if (clickedShape) {
+                if (selectedShapes.some(s => s.id === clickedShape.id)) {
+                    startDragShapes = JSON.parse(JSON.stringify(selectedShapes));
+                    selectedShape = null;
+                } else {
+                    selectedShapes = [];
+                    selectedShape = clickedShape;
+                    // Deep copy for undo history
+                    startDragShape = JSON.parse(JSON.stringify(selectedShape));
+
+                    if (selectedShape.type === "circle") {
+                        dragOffsetX = worldPos.x - selectedShape.centerX;
+                        dragOffsetY = worldPos.y - selectedShape.centerY;
+                    } else if (selectedShape.type === "text") {
+                        dragOffsetX = worldPos.x - selectedShape.x;
+                        dragOffsetY = worldPos.y - selectedShape.y;
+                    } else if (selectedShape.type === "pencil") {
+                        dragOffsetX = worldPos.x;
+                        dragOffsetY = worldPos.y;
+                    } else if (selectedShape.type === "image" || selectedShape.type === "rect") {
                         isResizing = false;
                         dragOffsetX = worldPos.x - selectedShape.x;
                         dragOffsetY = worldPos.y - selectedShape.y;
                     }
                 }
+            } else {
+                selectedShape = null;
+                selectedShapes = [];
             }
-        } else if (selectedTool === "pencil") {
+        } else if (selectedTool === "pencil" || selectedTool === "lasso-copy") {
             currentPath = [{ x: worldPos.x, y: worldPos.y }];
         } else if (selectedTool === "eraser") {
             const shapeToErace = findShapeAt(worldPos.x, worldPos.y, existingShapes, ctx);
@@ -303,7 +408,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                     shapeId: shapeToErace.id,
                     roomId
                 }));
-                clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
+                clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers, selectedShapes);
             }
         } else if (selectedTool === "text") {
             clicked = false;
@@ -395,7 +500,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                     roomId
                 }));
             }
-            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
+            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers, selectedShapes);
             document.body.removeChild(input);
         };
 
@@ -428,6 +533,21 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
 
         if (selectedTool === "pan" || isSpacePressed || e.button === 1 || (e.button === 0 && e.altKey)) {
             canvas.style.cursor = isSpacePressed || selectedTool === "pan" ? "grab" : "default";
+            return;
+        }
+
+        if (selectedTool === "lasso-copy") {
+            if (currentPath.length > 2) {
+                const elements = [];
+                for (const shape of existingShapes) {
+                    const center = getShapeCenter(shape);
+                    if (pointInPolygon(center, currentPath)) {
+                        elements.push(JSON.parse(JSON.stringify(shape)));
+                    }
+                }
+                copiedShapes = elements;
+            }
+            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers, selectedShapes);
             return;
         }
 
@@ -481,7 +601,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                     }
                 }
             }
-            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
+            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers, selectedShapes);
             return;
         }
 
@@ -539,7 +659,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                 message: JSON.stringify({ shape }),
                 roomId
             }));
-            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
+            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers, selectedShapes);
         }
 
         if (selectedTool === "select" && startDragShape && JSON.stringify(selectedShape) !== JSON.stringify(startDragShape)) {
@@ -549,12 +669,25 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                 shape: selectedShape,
                 roomId
             }));
+        } else if (selectedTool === "select" && startDragShapes && JSON.stringify(selectedShapes) !== JSON.stringify(startDragShapes)) {
+            for (let i = 0; i < selectedShapes.length; i++) {
+                const oldS = startDragShapes[i];
+                const newS = selectedShapes[i];
+                if (JSON.stringify(oldS) !== JSON.stringify(newS)) {
+                    socket.send(JSON.stringify({
+                        type: "update_shape",
+                        shape: newS,
+                        roomId
+                    }));
+                }
+            }
         }
 
         isResizing = false;
         resizeHandle = null;
-        selectedShape = null;
         startDragShape = null;
+        startDragShapeBox = null;
+        startDragShapes = null;
     };
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -566,19 +699,16 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
             camera.y += deltaY;
             lastMouseX = e.clientX;
             lastMouseY = e.clientY;
-            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
+            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers, selectedShapes);
             return;
         }
-
-        lastMouseX = e.clientX;
-        lastMouseY = e.clientY;
 
         if (clicked) {
             const worldPos = screenToWorld(e.offsetX, e.offsetY);
             const width = worldPos.x - startX;
             const height = worldPos.y - startY;
 
-            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
+            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers, selectedShapes);
 
             ctx.strokeStyle = selectedColor;
             ctx.lineWidth = 2;
@@ -590,19 +720,31 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                     ctx.strokeStyle = "#6366f1";
                 }
                 ctx.strokeRect(startX, startY, width, height);
+
             } else if (selectedTool === "circle") {
                 const radius = Math.sqrt(width * width + height * height);
                 ctx.beginPath();
                 ctx.arc(startX, startY, radius, 0, 2 * Math.PI);
                 ctx.stroke();
-            } else if (selectedTool === "pencil") {
+            } else if (selectedTool === "pencil" || selectedTool === "lasso-copy") {
                 currentPath.push({ x: worldPos.x, y: worldPos.y });
                 ctx.beginPath();
                 ctx.moveTo(startX, startY);
                 for (let i = 1; i < currentPath.length; i++) {
                     ctx.lineTo(currentPath[i].x, currentPath[i].y);
                 }
-                ctx.stroke();
+                
+                if (selectedTool === "lasso-copy") {
+                    ctx.closePath();
+                    ctx.fillStyle = "rgba(99, 102, 241, 0.1)";
+                    ctx.fill();
+                    ctx.strokeStyle = "#6366f1";
+                    ctx.setLineDash([5, 5]);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                } else {
+                    ctx.stroke();
+                }
             } else if (selectedTool === "line") {
                 ctx.beginPath();
                 ctx.moveTo(startX, startY);
@@ -637,27 +779,84 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                         shapeId: shapeToErace.id,
                         roomId
                     }));
-                    clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
+                    clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers, selectedShapes);
+                }
+            } else if (selectedTool === "select" && selectedShapes.length > 0 && startDragShapes) {
+                const diffX = worldPos.x - startX;
+                const diffY = worldPos.y - startY;
+                for (let i = 0; i < selectedShapes.length; i++) {
+                    const shape = selectedShapes[i];
+                    const startShape = startDragShapes[i];
+                    if (shape.type === "rect" || shape.type === "text" || shape.type === "image") {
+                        shape.x = (startShape as any).x + diffX;
+                        shape.y = (startShape as any).y + diffY;
+                    } else if (shape.type === "circle") {
+                        shape.centerX = (startShape as any).centerX + diffX;
+                        shape.centerY = (startShape as any).centerY + diffY;
+                    } else if (shape.type === "line" || shape.type === "arrow") {
+                        shape.startX = (startShape as any).startX + diffX;
+                        shape.startY = (startShape as any).startY + diffY;
+                        shape.endX = (startShape as any).endX + diffX;
+                        shape.endY = (startShape as any).endY + diffY;
+                    } else if (shape.type === "pencil") {
+                        for (let j = 0; j < shape.points.length; j++) {
+                            shape.points[j].x = (startShape as any).points[j].x + diffX;
+                            shape.points[j].y = (startShape as any).points[j].y + diffY;
+                        }
+                    }
                 }
             } else if (selectedTool === "select" && selectedShape) {
-                if (selectedShape.type === "rect") {
-                    selectedShape.x = worldPos.x - dragOffsetX;
-                    selectedShape.y = worldPos.y - dragOffsetY;
-                } else if (selectedShape.type === "circle") {
+                if (selectedShape.type === "circle") {
                     selectedShape.centerX = worldPos.x - dragOffsetX;
                     selectedShape.centerY = worldPos.y - dragOffsetY;
                 } else if (selectedShape.type === "text") {
                     selectedShape.x = worldPos.x - dragOffsetX;
                     selectedShape.y = worldPos.y - dragOffsetY;
                 } else if (selectedShape.type === "pencil") {
-                    const diffX = worldPos.x - dragOffsetX;
-                    const diffY = worldPos.y - dragOffsetY;
-                    selectedShape.points = selectedShape.points.map(p => ({
-                        x: p.x + diffX,
-                        y: p.y + diffY
-                    }));
-                    dragOffsetX = worldPos.x;
-                    dragOffsetY = worldPos.y;
+                    if (isResizing && resizeHandle && startDragShape && startDragShape.type === "pencil") {
+                        const box = startDragShapeBox || getShapeBoundingBox(startDragShape, ctx);
+                        if (box) {
+                            let newX = box.x;
+                            let newY = box.y;
+                            let newW = box.width;
+                            let newH = box.height;
+                            if (resizeHandle === "se") {
+                                newW = worldPos.x - box.x;
+                                newH = worldPos.y - box.y;
+                            } else if (resizeHandle === "sw") {
+                                newX = worldPos.x;
+                                newW = box.x + box.width - newX;
+                                newH = worldPos.y - box.y;
+                            } else if (resizeHandle === "ne") {
+                                newY = worldPos.y;
+                                newH = box.y + box.height - newY;
+                                newW = worldPos.x - box.x;
+                            } else if (resizeHandle === "nw") {
+                                newX = worldPos.x;
+                                newY = worldPos.y;
+                                newW = box.x + box.width - newX;
+                                newH = box.y + box.height - newY;
+                            }
+                            if (newW < 5) newW = 5;
+                            if (newH < 5) newH = 5;
+                            const scaleX = newW / box.width;
+                            const scaleY = newH / box.height;
+                            for (let i = 0; i < selectedShape.points.length; i++) {
+                                const sp = startDragShape.points[i];
+                                selectedShape.points[i].x = newX + (sp.x - box.x) * scaleX;
+                                selectedShape.points[i].y = newY + (sp.y - box.y) * scaleY;
+                            }
+                        }
+                    } else {
+                        const diffX = worldPos.x - dragOffsetX;
+                        const diffY = worldPos.y - dragOffsetY;
+                        for (const p of selectedShape.points) {
+                            p.x += diffX;
+                            p.y += diffY;
+                        }
+                        dragOffsetX = worldPos.x;
+                        dragOffsetY = worldPos.y;
+                    }
                 } else if (selectedShape.type === "line" || selectedShape.type === "arrow") {
                     const width = selectedShape.endX - selectedShape.startX;
                     const height = selectedShape.endY - selectedShape.startY;
@@ -665,7 +864,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                     selectedShape.startY = worldPos.y - dragOffsetY;
                     selectedShape.endX = selectedShape.startX + width;
                     selectedShape.endY = selectedShape.startY + height;
-                } else if (selectedShape.type === "image") {
+                } else if (selectedShape.type === "image" || selectedShape.type === "rect") {
                     if (isResizing && resizeHandle) {
                         if (resizeHandle === "se") {
                             selectedShape.width = worldPos.x - selectedShape.x;
@@ -693,7 +892,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                         selectedShape.y = worldPos.y - dragOffsetY;
                     }
                 }
-                clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
+                clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers, selectedShapes);
             }
         }
 
@@ -719,7 +918,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                     lastUpdate: now
                 });
             }
-            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
+            clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers, selectedShapes);
 
             socket.send(JSON.stringify({
                 type: "laser_pointer",
@@ -728,6 +927,9 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                 y: worldPos.y
             }));
         }
+
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
     };
 
     const handleWheel = (e: WheelEvent) => {
@@ -743,7 +945,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
         camera.y = e.offsetY - worldPos.y * camera.scale;
 
         onZoomChange?.(camera.scale);
-        clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
+        clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers, selectedShapes);
     };
 
     const handleTouchStart = (e: TouchEvent) => {
@@ -817,7 +1019,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
         console.log("draw/index.ts updateBackgroundColor called with:", newColor);
         backgroundColor = newColor;
         canvas.style.backgroundColor = newColor;
-        clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, null, laserPointers);
+        clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, null, laserPointers, selectedShapes);
     };
 
     const resetView = () => {
@@ -825,7 +1027,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
         camera.y = 0;
         camera.scale = 1;
         onZoomChange?.(camera.scale);
-        clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers);
+        clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, selectedShape, laserPointers, selectedShapes);
     };
 
     const undo = () => {
@@ -845,7 +1047,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
             if (index !== -1) existingShapes[index] = op.oldShape;
             socket.send(JSON.stringify({ type: "update_shape", shape: op.oldShape, roomId }));
         }
-        clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, null, laserPointers);
+        clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, null, laserPointers, selectedShapes);
     };
 
     function redo() {
@@ -873,7 +1075,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
             if (index !== -1) existingShapes[index] = op.newShape;
             socket.send(JSON.stringify({ type: "update_shape", shape: op.newShape, roomId }));
         }
-        clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, null, laserPointers);
+        clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, null, laserPointers, selectedShapes);
     }
 
     function insertImage(data: string, x: number, y: number, width: number, height: number) {
@@ -893,7 +1095,7 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
             message: JSON.stringify({ shape: imageShape }),
             roomId
         }));
-        clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, null, laserPointers);
+        clearCanvas(existingShapes, canvas, ctx!, camera, backgroundColor, imageCache, null, laserPointers, selectedShapes);
     }
 
     function cleanup() {
@@ -922,6 +1124,35 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
     };
 }
 
+
+function pointInPolygon(point: {x: number, y: number}, vs: {x: number, y: number}[]) {
+    let x = point.x, y = point.y;
+    let inside = false;
+    for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+        let xi = vs[i].x, yi = vs[i].y;
+        let xj = vs[j].x, yj = vs[j].y;
+        let intersect = ((yi > y) !== (yj > y))
+            && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+    }
+    return inside;
+}
+
+function getShapeCenter(shape: Shape): {x: number, y: number} {
+    if (shape.type === "rect" || shape.type === "image") {
+        return { x: shape.x + shape.width / 2, y: shape.y + shape.height / 2 };
+    } else if (shape.type === "circle") {
+        return { x: shape.centerX, y: shape.centerY };
+    } else if (shape.type === "line" || shape.type === "arrow") {
+        return { x: (shape.startX + shape.endX) / 2, y: (shape.startY + shape.endY) / 2 };
+    } else if (shape.type === "text") {
+        return { x: shape.x, y: shape.y };
+    } else if (shape.type === "pencil") {
+        if (shape.points.length === 0) return {x: 0, y: 0};
+        return shape.points[Math.floor(shape.points.length / 2)];
+    }
+    return { x: 0, y: 0 };
+}
 
 function shapeIntersectRect(shape: Shape, x: number, y: number, w: number, h: number, ctx: CanvasRenderingContext2D): boolean {
     const rx = x, ry = y, rw = w, rh = h;
@@ -1000,11 +1231,67 @@ function findShapeAt(x: number, y: number, existingShapes: Shape[], ctx: CanvasR
     return null;
 }
 
-function clearCanvas(existingShapes: Shape[], canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, camera: { x: number, y: number, scale: number }, backgroundColor: string, imageCache: Map<string, HTMLImageElement>, selectedShape: Shape | null = null, laserPointers?: Map<string, LaserPointerData>) {
-    renderScene(existingShapes, canvas, ctx, camera, backgroundColor, imageCache, selectedShape, laserPointers);
+function getShapeBoundingBox(shape: Shape, ctx: CanvasRenderingContext2D): { x: number, y: number, width: number, height: number } | null {
+    if (shape.type === "rect" || shape.type === "image") {
+        const x = Math.min(shape.x, shape.x + shape.width);
+        const y = Math.min(shape.y, shape.y + shape.height);
+        const width = Math.abs(shape.width);
+        const height = Math.abs(shape.height);
+        return { x, y, width, height };
+    }
+    if (shape.type === "circle") {
+        return {
+            x: shape.centerX - shape.radius,
+            y: shape.centerY - shape.radius,
+            width: shape.radius * 2,
+            height: shape.radius * 2
+        };
+    }
+    if (shape.type === "text") {
+        const textWidth = ctx.measureText(shape.text).width;
+        return {
+            x: shape.x - 4,
+            y: shape.y - 20,
+            width: textWidth + 8,
+            height: 24
+        };
+    }
+    if (shape.type === "line" || shape.type === "arrow") {
+        const minX = Math.min(shape.startX, shape.endX);
+        const maxX = Math.max(shape.startX, shape.endX);
+        const minY = Math.min(shape.startY, shape.endY);
+        const maxY = Math.max(shape.startY, shape.endY);
+        return {
+            x: minX - 4,
+            y: minY - 4,
+            width: (maxX - minX) + 8,
+            height: (maxY - minY) + 8
+        };
+    }
+    if (shape.type === "pencil") {
+        if (!shape.points || shape.points.length === 0) return null;
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        for (const p of shape.points) {
+            if (p.x < minX) minX = p.x;
+            if (p.x > maxX) maxX = p.x;
+            if (p.y < minY) minY = p.y;
+            if (p.y > maxY) maxY = p.y;
+        }
+        return {
+            x: minX - 4,
+            y: minY - 4,
+            width: (maxX - minX) + 8,
+            height: (maxY - minY) + 8
+        };
+    }
+    return null;
 }
 
-function renderScene(existingShapes: Shape[], canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, camera: { x: number, y: number, scale: number }, backgroundColor: string, imageCache: Map<string, HTMLImageElement>, selectedShape: Shape | null = null, laserPointers?: Map<string, LaserPointerData>) {
+function clearCanvas(existingShapes: Shape[], canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, camera: { x: number, y: number, scale: number }, backgroundColor: string, imageCache: Map<string, HTMLImageElement>, selectedShape: Shape | null = null, laserPointers?: Map<string, LaserPointerData>, selectedShapes: Shape[] = []) {
+    renderScene(existingShapes, canvas, ctx, camera, backgroundColor, imageCache, selectedShape, laserPointers, selectedShapes);
+}
+
+function renderScene(existingShapes: Shape[], canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, camera: { x: number, y: number, scale: number }, backgroundColor: string, imageCache: Map<string, HTMLImageElement>, selectedShape: Shape | null = null, laserPointers?: Map<string, LaserPointerData>, selectedShapes: Shape[] = []) {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = backgroundColor;
@@ -1138,27 +1425,51 @@ function renderScene(existingShapes: Shape[], canvas: HTMLCanvasElement, ctx: Ca
         });
     }
 
-    // Draw handles for selected image
-    if (selectedShape && selectedShape.type === "image") {
-        const handleSize = 8 / camera.scale;
-        ctx.strokeStyle = "#6366f1";
-        ctx.lineWidth = 2 / camera.scale;
-        ctx.strokeRect(selectedShape.x, selectedShape.y, selectedShape.width, selectedShape.height);
-
-        ctx.fillStyle = "white";
-        const handles = [
-            { x: selectedShape.x, y: selectedShape.y },
-            { x: selectedShape.x + selectedShape.width, y: selectedShape.y },
-            { x: selectedShape.x, y: selectedShape.y + selectedShape.height },
-            { x: selectedShape.x + selectedShape.width, y: selectedShape.y + selectedShape.height }
-        ];
-
-        handles.forEach(h => {
-            ctx.beginPath();
-            ctx.rect(h.x - handleSize / 2, h.y - handleSize / 2, handleSize, handleSize);
-            ctx.fill();
-            ctx.stroke();
+    // Draw handles / selection highlight for ANY selected shape
+    if (selectedShapes && selectedShapes.length > 0) {
+        ctx.save();
+        ctx.strokeStyle = "#818cf8"; // Subtle indigo selection border
+        ctx.lineWidth = 1.5 / camera.scale;
+        selectedShapes.forEach(shape => {
+            const bbox = getShapeBoundingBox(shape, ctx);
+            if (bbox) {
+                ctx.strokeRect(bbox.x, bbox.y, bbox.width, bbox.height);
+            }
         });
+        ctx.restore();
+    }
+
+    if (selectedShape) {
+        const bbox = getShapeBoundingBox(selectedShape, ctx);
+        if (bbox) {
+            ctx.save();
+            ctx.strokeStyle = "#818cf8"; // Subtle indigo selection border
+            ctx.lineWidth = 1.5 / camera.scale;
+            ctx.strokeRect(bbox.x, bbox.y, bbox.width, bbox.height);
+            
+            // Draw resize corner handles for resizable shapes
+            if (selectedShape.type === "image" || selectedShape.type === "rect" || selectedShape.type === "pencil") {
+                const handleSize = 8 / camera.scale;
+                ctx.fillStyle = "white";
+                ctx.strokeStyle = "#4f46e5";
+                ctx.lineWidth = 1.5 / camera.scale;
+                
+                const handles = [
+                    { x: bbox.x, y: bbox.y },
+                    { x: bbox.x + bbox.width, y: bbox.y },
+                    { x: bbox.x, y: bbox.y + bbox.height },
+                    { x: bbox.x + bbox.width, y: bbox.y + bbox.height }
+                ];
+                
+                handles.forEach(h => {
+                    ctx.beginPath();
+                    ctx.rect(h.x - handleSize / 2, h.y - handleSize / 2, handleSize, handleSize);
+                    ctx.fill();
+                    ctx.stroke();
+                });
+            }
+            ctx.restore();
+        }
     }
 }
 

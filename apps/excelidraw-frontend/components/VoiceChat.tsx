@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 // Fixed ICE syntax and added robust STUN servers
 import { Mic, MicOff, Phone, PhoneOff, User, Volume2, Bell, Check, X } from "lucide-react";
 
@@ -29,13 +29,13 @@ export function VoiceChat({ roomId, socket, userId, userName }: VoiceChatProps) 
     const peersRef = useRef<{ [key: string]: Peer }>({});
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const safeSend = (data: any) => {
+    const safeSend = useCallback((data: any) => {
         if (socket && socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify(data));
         } else {
             console.warn("VoiceChat socket not open, message dropped:", data.type);
         }
-    };
+    }, [socket]);
 
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {
@@ -517,5 +517,5 @@ function RemoteAudio({ stream }: { stream: MediaStream }) {
         }
     }, [stream]);
 
-    return <audio ref={audioRef} autoPlay playsInline />;
+    return <audio ref={audioRef} autoPlay />;
 }
