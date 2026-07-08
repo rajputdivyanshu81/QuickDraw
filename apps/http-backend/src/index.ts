@@ -163,28 +163,61 @@ app.post("/ai-chat", async (req: Request, res: Response) => {
         return;
     }
 
-    try {
-        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${apiKey}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                messages: messages,
-                model: "llama-3.3-70b-versatile"
-            })
-        });
+    const MAX_RETRIES = 3;
+    const TIMEOUT_MS = 15000;
 
-        const data = await response.json();
-        if (!response.ok) {
-            throw new Error(data.error?.message || "Failed to fetch from Groq");
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+        try {
+            const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${apiKey}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    messages: messages,
+                    model: "llama-3.3-70b-versatile"
+                }),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            const data = await response.json();
+            if (!response.ok) {
+                // If it's a 4xx error (other than 429), it's likely a bad request, don't retry
+                if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+                    res.status(response.status).json({ message: data.error?.message || "Bad Request to AI provider" });
+                    return;
+                }
+                throw new Error(data.error?.message || "Failed to fetch from Groq");
+            }
+
+            // Basic validation to ensure the JSON isn't completely hallucinatory
+            if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
+                throw new Error("AI returned malformed or empty response structure");
+            }
+
+            res.json(data);
+            return; // Success, exit loop
+        } catch (e: any) {
+            clearTimeout(timeoutId);
+            
+            const isAbort = e.name === "AbortError";
+            console.error(`AI Chat Attempt ${attempt} Failed:`, isAbort ? "Request timed out" : e.message);
+
+            if (attempt === MAX_RETRIES) {
+                const status = isAbort ? 504 : 500;
+                const message = isAbort ? "The AI took too long to respond." : "Internal Server Error";
+                res.status(status).json({ message: e.message || message });
+                return;
+            }
+
+            // Exponential backoff: wait 1s, then 2s
+            await new Promise(resolve => setTimeout(resolve, attempt * 1000));
         }
-
-        res.json(data);
-    } catch (e: any) {
-        console.error("AI Chat Error:", e);
-        res.status(500).json({ message: e.message || "Internal Server Error" });
     }
 });
 
