@@ -16,7 +16,8 @@ QuickDraw is a high-performance, real-time collaborative whiteboarding applicati
 
 **🌐 Live Demo: [quick-draw-excelidraw-frontend.vercel.app](https://quick-draw-excelidraw-frontend.vercel.app)**
 
-![Hero Section](hero.png)
+<img width="2852" height="1558" alt="image" src="https://github.com/user-attachments/assets/e94a035d-cf2e-41e7-b6b7-3239e6ff55d8" />
+
 
 ### 📖 Resources
 - [**Documentation**](./apps/docs) - Comprehensive guides, API reference, and architecture.
@@ -31,7 +32,8 @@ QuickDraw is a high-performance, real-time collaborative whiteboarding applicati
 - **AI Integration**: Built-in AI chat powered by Groq (Llama 3.3) for design assistance.
 - **Private Drawing Rooms**: Create and join unique rooms for focused group brainstorming.
 
-![Collaboration and AI](collaboration.png)
+<img width="2850" height="1566" alt="image" src="https://github.com/user-attachments/assets/439bf853-a3a0-460c-8ec4-848ad79323d2" />
+
 
 - **PPT Export**: Export your whiteboard designs directly to PowerPoint presentations.
 - **Modern Auth**: Secure user management and authentication powered by Clerk.
@@ -52,7 +54,8 @@ QuickDraw is a high-performance, real-time collaborative whiteboarding applicati
 
 ## ⚙️ How it Works
 
-![Workflow](how_it_works.png)
+<img width="2850" height="1362" alt="image" src="https://github.com/user-attachments/assets/ca75cbe3-e9d0-4446-b480-f34a65482a33" />
+
 
 Detailed instructions are available in the [**Contributing Guide**](CONTRIBUTING.md).
 
