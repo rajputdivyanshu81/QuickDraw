@@ -5,7 +5,6 @@ import { prismaClient } from '@repo/db/client';
 import cors from "cors";
 import PptxGenJS from "pptxgenjs";
 import dotenv from "dotenv";
-import sanitizeHtml from "sanitize-html";
 import { generatePaymentHash, verifyPaymentResponse } from './payment.js';
 
 dotenv.config();
@@ -92,11 +91,6 @@ app.get("/room/:slug", async (req: Request, res: Response) => {
     const room = await prismaClient.room.findFirst({
         where: {
             slug
-        },
-        select: {
-            id: true,
-            slug: true,
-            createdAt: true
         }
     });
 
@@ -135,34 +129,6 @@ app.put("/document/:roomId", middleware, async (req: Request, res: Response) => 
         let roomId = Number(roomIdStr);
         const { document } = req.body;
 
-        if (typeof document !== "string") {
-            res.status(400).json({ message: "Invalid document payload" });
-            return;
-        }
-
-        if (document.length > 200_000) {
-            res.status(413).json({ message: "Document too large" });
-            return;
-        }
-
-        const sanitizedDocument = sanitizeHtml(document, {
-            allowedTags: sanitizeHtml.defaults.allowedTags.concat([
-                "div",
-                "span",
-                "h1",
-                "h2",
-                "h3",
-                "pre",
-                "code"
-            ]),
-            allowedAttributes: {
-                "*": ["class", "contenteditable"],
-                a: ["href", "name", "target", "rel"]
-            },
-            allowedSchemes: ["http", "https", "mailto"],
-            enforceHtmlBoundary: true
-        });
-
         if (isNaN(roomId)) {
             const room = await prismaClient.room.findFirst({ where: { slug: roomIdStr } });
             if (room) roomId = room.id;
@@ -175,7 +141,7 @@ app.put("/document/:roomId", middleware, async (req: Request, res: Response) => 
 
         await prismaClient.room.update({
             where: { id: roomId },
-            data: { document: sanitizedDocument }
+            data: { document }
         });
 
         res.json({ success: true });

@@ -17,24 +17,15 @@ export async function middleware(req: CustomRequest, res: Response, next: NextFu
     }
 
     try {
-        if (!token || !token.startsWith("Bearer ")) {
-            res.status(403).json({
-                message: "Unauthorized"
-            });
-            return;
-        }
+        console.log("Middleware received Authorization header:", token ? token.substring(0, 50) + "..." : "EMPTY");
 
-        jwt = token.split(" ")[1] ?? "";
-        if (!jwt) {
-            res.status(403).json({
-                message: "Unauthorized"
-            });
-            return;
-        }
+        // Remove 'Bearer ' prefix if present
+        jwt = token.startsWith("Bearer ") ? token.split(" ")[1] ?? token : token;
+        console.log("Extracted JWT for verification:", jwt ? jwt.substring(0, 20) + "..." : "EMPTY");
 
         const decoded = await verifyToken(jwt, {
             secretKey: process.env.CLERK_SECRET_KEY,
-            clockSkewInMs: 60000,
+            clockSkewInMs: 600000, // 10 minutes leeway for clock skew in local dev
         });
 
         if (!decoded || !decoded.sub) {
@@ -71,10 +62,12 @@ export async function middleware(req: CustomRequest, res: Response, next: NextFu
         console.error("Auth error details:", {
             message: err.message,
             stack: err.stack,
-            reason: err.reason
+            reason: err.reason, // Clerk specific sometimes
+            tokenSnippet: jwt ? jwt.substring(0, 10) + "..." : "NONE"
         });
         res.status(403).json({
-            message: "Unauthorized"
+            message: "Unauthorized",
+            debug: err.message || "Unknown auth error"
         });
     }
 }
