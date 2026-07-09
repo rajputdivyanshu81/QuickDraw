@@ -74,7 +74,7 @@ export function DocumentEditor({ roomId }: { roomId: string }) {
                     return;
                 }
 
-                if ((name === "href" || name === "src") && (value.startsWith("javascript:") || value.startsWith("data:text/html"))) {
+                if ((name === "href" || name === "src") && /^(javascript|vbscript|data):/.test(value)) {
                     node.removeAttribute(attr.name);
                 }
             });
