@@ -57,6 +57,32 @@ export function DocumentEditor({ roomId }: { roomId: string }) {
         </div>`;
     };
 
+    const sanitizeRichTextHtml = (rawHtml: string) => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(rawHtml, "text/html");
+
+        const blockedTags = doc.querySelectorAll("script, iframe, object, embed, link, meta");
+        blockedTags.forEach(node => node.remove());
+
+        doc.querySelectorAll("*").forEach((node) => {
+            [...node.attributes].forEach((attr) => {
+                const name = attr.name.toLowerCase();
+                const value = attr.value.trim().toLowerCase();
+
+                if (name.startsWith("on")) {
+                    node.removeAttribute(attr.name);
+                    return;
+                }
+
+                if ((name === "href" || name === "src") && /^(javascript|vbscript|data):/.test(value)) {
+                    node.removeAttribute(attr.name);
+                }
+            });
+        });
+
+        return doc.body.innerHTML;
+    };
+
     // Initial fetch
     useEffect(() => {
         let mounted = true;
@@ -72,9 +98,11 @@ export function DocumentEditor({ roomId }: { roomId: string }) {
                     let htmlContent = res.data.document || "<div><br></div>";
                     if (problem && !htmlContent.includes('contenteditable="false"')) {
                         htmlContent = getSpecCardHTML() + "<div>// Write your system design notes or API designs here...<br></div>" + (htmlContent === "<div><br></div>" ? "" : htmlContent);
+                        htmlContent = sanitizeRichTextHtml(htmlContent);
                         // Sync back to database immediately
                         axios.put(`${HTTP_BACKEND}/document/${roomId}`, { document: htmlContent }, { headers: { Authorization: `Bearer ${token}` } }).catch(e => console.error(e));
                     }
+                    htmlContent = sanitizeRichTextHtml(htmlContent);
                     setContent(htmlContent);
                     lastPushedContent.current = htmlContent;
                     if (editorRef.current && editorRef.current.innerHTML !== htmlContent) {
@@ -105,9 +133,11 @@ export function DocumentEditor({ roomId }: { roomId: string }) {
                 let remoteContent = res.data.document || "<div><br></div>";
                 if (problem && !remoteContent.includes('contenteditable="false"')) {
                     remoteContent = getSpecCardHTML() + "<div>// Write your system design notes or API designs here...<br></div>" + (remoteContent === "<div><br></div>" ? "" : remoteContent);
+                    remoteContent = sanitizeRichTextHtml(remoteContent);
                     // Sync back to database immediately
                     axios.put(`${HTTP_BACKEND}/document/${roomId}`, { document: remoteContent }, { headers: { Authorization: `Bearer ${token}` } }).catch(e => console.error(e));
                 }
+                remoteContent = sanitizeRichTextHtml(remoteContent);
                 if (remoteContent !== content && remoteContent !== lastPushedContent.current) {
                     setContent(remoteContent);
                     lastPushedContent.current = remoteContent;
@@ -132,12 +162,13 @@ export function DocumentEditor({ roomId }: { roomId: string }) {
                 const token = await getToken();
                 if (!token) return;
 
+                const sanitizedContent = sanitizeRichTextHtml(content);
                 await axios.put(`${HTTP_BACKEND}/document/${roomId}`, {
-                    document: content
+                    document: sanitizedContent
                 }, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
-                lastPushedContent.current = content;
+                lastPushedContent.current = sanitizedContent;
                 isLocalChange.current = false;
             } catch (e) {
                 console.error("Failed to save document", e);

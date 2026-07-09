@@ -6,18 +6,27 @@ export function useSocket() {
     const [socket, setSocket] = useState<WebSocket>();
 
     useEffect(() => {
-        const ws = new WebSocket(`${WS_URL}?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmYzEyNzllMy1kMjFjLTQzODctYWRmZC02NmQwNTAwYzQ3MjciLCJpYXQiOjE3Mzg4NTYzNzJ9.l2G8FoPSzKK0HtOaWcjy8Uz0yc8tO-e--fRHfWYjB5c`);
+        const token = process.env.NEXT_PUBLIC_WS_TOKEN;
+        if (!token) {
+            setLoading(false);
+            return;
+        }
+
+        const ws = new WebSocket(`${WS_URL}?token=${encodeURIComponent(token)}`);
         ws.onopen = () => {
             setLoading(false);
             setSocket(ws);
-        }
+        };
+
+        ws.onclose = () => {
+            setSocket(undefined);
+        };
+
+        return () => ws.close();
     }, []);
 
     return {
         socket,
         loading
-    }
-
-    
-
+    };
 }
