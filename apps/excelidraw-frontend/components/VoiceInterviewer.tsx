@@ -41,7 +41,7 @@ export function VoiceInterviewer({ roomId }: { roomId: string }) {
 
   if (!token || !url) {
     return (
-      <div className="absolute bottom-6 right-6 z-50">
+      <div className="absolute bottom-6 left-6 z-50">
         <button
           onClick={startInterview}
           disabled={isConnecting}
@@ -55,7 +55,7 @@ export function VoiceInterviewer({ roomId }: { roomId: string }) {
   }
 
   return (
-    <div className="absolute bottom-6 right-6 z-50 w-80 bg-[#1e1e1e] rounded-xl shadow-2xl p-5 border border-gray-800">
+    <div className="absolute bottom-6 left-6 z-50 w-80 bg-[#1e1e1e] rounded-xl shadow-2xl p-5 border border-gray-800">
       <LiveKitRoom
         serverUrl={url}
         token={token}
