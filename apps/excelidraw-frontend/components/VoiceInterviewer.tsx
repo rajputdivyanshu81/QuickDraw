@@ -92,6 +92,7 @@ export function VoiceInterviewer({ roomId, inline = false }: { roomId: string, i
             connect={true}
             audio={true}
             video={false}
+            data-lk-theme="default"
             onDisconnected={() => {
               setToken(null);
               setShowUI(true);
@@ -113,6 +114,7 @@ export function VoiceInterviewer({ roomId, inline = false }: { roomId: string, i
         connect={true}
         audio={true}
         video={false}
+        data-lk-theme="default"
         onDisconnected={() => setToken(null)}
       >
         <RoomAudioRenderer />
