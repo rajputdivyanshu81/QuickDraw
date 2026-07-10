@@ -92,12 +92,13 @@ export function VoiceInterviewer({ roomId, inline = false }: { roomId: string, i
             connect={true}
             audio={true}
             video={false}
-          >
-            <RoomAudioRenderer />
-            <AgentUI onClose={() => {
+            onDisconnected={() => {
               setToken(null);
               setShowUI(true);
-            }} />
+            }}
+          >
+            <RoomAudioRenderer />
+            <AgentUI onClose={() => setShowUI(false)} />
           </LiveKitRoom>
         </div>
       </div>
@@ -112,6 +113,7 @@ export function VoiceInterviewer({ roomId, inline = false }: { roomId: string, i
         connect={true}
         audio={true}
         video={false}
+        onDisconnected={() => setToken(null)}
       >
         <RoomAudioRenderer />
         <AgentUI onClose={() => setToken(null)} />
