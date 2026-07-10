@@ -7,6 +7,7 @@ import PptxGenJS from "pptxgenjs";
 import dotenv from "dotenv";
 import { generatePaymentHash, verifyPaymentResponse } from './payment.js';
 import { AccessToken } from 'livekit-server-sdk';
+import { rateLimit } from 'express-rate-limit';
 
 dotenv.config();
 
@@ -475,7 +476,15 @@ app.post("/api/payment-callback", async (req: Request, res: Response) => {
     }
 });
 
-app.post("/api/livekit/token", middleware, async (req: Request, res: Response) => {
+const tokenRateLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 20, // Limit each IP to 20 requests per `window` (here, per 1 minute)
+    message: { message: 'Too many token requests from this IP, please try again later' },
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+});
+
+app.post("/api/livekit/token", tokenRateLimiter, middleware, async (req: Request, res: Response) => {
     // @ts-ignore
     const userId = req.userId;
     const roomName = req.body.roomName || `interview-${userId}`;
