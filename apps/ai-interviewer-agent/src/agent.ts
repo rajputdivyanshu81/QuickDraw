@@ -3,8 +3,8 @@ import {
   defineAgent,
   multimodal,
 } from '@livekit/agents';
-import { deepgram } from '@livekit/agents-plugin-deepgram';
-import { openai } from '@livekit/agents-plugin-openai';
+import * as deepgram from '@livekit/agents-plugin-deepgram';
+import * as openai from '@livekit/agents-plugin-openai';
 import * as dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
