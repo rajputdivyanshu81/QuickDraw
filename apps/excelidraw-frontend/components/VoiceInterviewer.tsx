@@ -143,6 +143,19 @@ function AgentUI({ onClose }: { onClose: () => void }) {
         {state === 'connected' ? 'Listening and thinking...' : 'Connecting to AI model...'}
       </div>
       
+      <style>{`
+        .lk-device-menu {
+          max-width: 280px !important;
+          left: 0 !important;
+          transform: translateY(calc(-100% - 0.5rem)) !important;
+        }
+        .lk-device-menu > li {
+          white-space: nowrap !important;
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+        }
+      `}</style>
+
       <div className="h-16 w-full flex items-center justify-center bg-[#121212] rounded-lg overflow-hidden relative">
         {audioTrack ? (
           <BarVisualizer
