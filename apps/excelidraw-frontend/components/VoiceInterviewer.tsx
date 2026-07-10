@@ -15,6 +15,7 @@ export function VoiceInterviewer({ roomId, inline = false }: { roomId: string, i
   const [token, setToken] = useState<string | null>(null);
   const [url, setUrl] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [showUI, setShowUI] = useState(true);
   const { getToken } = useAuth();
 
   const startInterview = useCallback(async () => {
@@ -78,13 +79,13 @@ export function VoiceInterviewer({ roomId, inline = false }: { roomId: string, i
     return (
       <div className="relative flex items-center justify-center">
         <button
-          onClick={() => setToken(null)}
-          className="p-2 rounded-lg flex items-center justify-center transition-colors bg-[#2a2a2a] text-indigo-400 border border-[#3a3a3a]"
-          title="Stop AI Interview"
+          onClick={() => setShowUI(!showUI)}
+          className={`p-2 rounded-lg flex items-center justify-center transition-colors ${showUI ? 'bg-[#2a2a2a] text-indigo-400 border border-[#3a3a3a]' : 'text-gray-400 hover:text-indigo-400 hover:bg-[#2a2a2a]/50'}`}
+          title="Toggle AI Interview Panel"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
         </button>
-        <div className="fixed bottom-6 left-6 md:left-24 w-80 bg-[#1e1e1e] rounded-xl shadow-2xl p-5 border border-[#2a2a2a] z-50">
+        <div className={`fixed bottom-6 left-6 md:left-24 w-80 bg-[#1e1e1e] rounded-xl shadow-2xl p-5 border border-[#2a2a2a] z-50 ${showUI ? 'block' : 'hidden'}`}>
           <LiveKitRoom
             serverUrl={url}
             token={token}
@@ -93,7 +94,10 @@ export function VoiceInterviewer({ roomId, inline = false }: { roomId: string, i
             video={false}
           >
             <RoomAudioRenderer />
-            <AgentUI onClose={() => setToken(null)} />
+            <AgentUI onClose={() => {
+              setToken(null);
+              setShowUI(true);
+            }} />
           </LiveKitRoom>
         </div>
       </div>
