@@ -39,7 +39,10 @@ export default defineAgent({
 });
 
 // @ts-ignore - LiveKit ServerOptions type mismatch in 1.5.0
-cli.runApp({ agent: fileURLToPath(import.meta.url) });
+cli.runApp({ 
+  agent: fileURLToPath(import.meta.url),
+  numIdleProcesses: 0,
+});
 
 // Dummy HTTP server so Render can deploy this as a Free "Web Service"
 // We only start this in the master process, not in LiveKit child processes
