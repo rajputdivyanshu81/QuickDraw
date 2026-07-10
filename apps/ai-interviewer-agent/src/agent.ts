@@ -30,9 +30,10 @@ export default defineAgent({
       }),
     });
 
-    await agent.session.start({ agent, room: ctx.room });
+    const session = new voice.AgentSession();
+    await session.start({ agent, room: ctx.room });
     
-    agent.session.say('Hello! I am your AI interviewer today. Whenever you are ready, please start explaining your high-level design, and I will jump in with questions.');
+    session.say('Hello! I am your AI interviewer today. Whenever you are ready, please start explaining your high-level design, and I will jump in with questions.');
   },
 });
 
