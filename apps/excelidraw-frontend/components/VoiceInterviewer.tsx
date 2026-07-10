@@ -131,7 +131,7 @@ function AgentUI({ onClose }: { onClose: () => void }) {
     <div className="flex flex-col items-center space-y-4">
       <div className="flex justify-between w-full items-center">
         <div className="text-white font-semibold flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${state === 'connected' ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`}></div>
+            <div className={`w-2 h-2 rounded-full ${state !== 'disconnected' && state !== 'initializing' && state !== 'connecting' ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`}></div>
             AI Interviewer
         </div>
         <button onClick={onClose} className="text-gray-400 hover:text-white">
@@ -140,7 +140,7 @@ function AgentUI({ onClose }: { onClose: () => void }) {
       </div>
       
       <div className="text-sm text-gray-400 text-center">
-        {state === 'connected' ? 'Listening and thinking...' : 'Connecting to AI model...'}
+        {state !== 'disconnected' && state !== 'initializing' && state !== 'connecting' ? 'Listening and thinking...' : 'Connecting to AI model...'}
       </div>
       
       <style>{`
