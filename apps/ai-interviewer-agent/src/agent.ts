@@ -8,6 +8,7 @@ import * as openai from '@livekit/agents-plugin-openai';
 import * as dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import http from 'node:http';
 
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 
@@ -37,5 +38,14 @@ export default defineAgent({
   },
 });
 
+// @ts-ignore - LiveKit ServerOptions type mismatch in 1.5.0
 cli.runApp({ agent: fileURLToPath(import.meta.url) });
 
+// Dummy HTTP server so Render can deploy this as a Free "Web Service"
+const port = process.env.PORT || 8080;
+http.createServer((req, res) => {
+  res.writeHead(200);
+  res.end('AI Agent is running!');
+}).listen(port, () => {
+  console.log(`Health check server listening on port ${port}`);
+});
