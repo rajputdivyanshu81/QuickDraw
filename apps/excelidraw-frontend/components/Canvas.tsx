@@ -12,6 +12,7 @@ import { PPTBuilder } from "./PPTBuilder";
 import { VoiceChat } from "./VoiceChat";
 import { DocumentEditor } from "./DocumentEditor";
 import { Timer } from "./Timer";
+import { VoiceInterviewer } from "./VoiceInterviewer";
 
 export function Canvas({
     roomId,
@@ -328,6 +329,8 @@ export function Canvas({
                 >
                     <PenTool className="w-5 h-5" />
                 </button>
+                <div className="h-px bg-[#2a2a2a] mx-1" />
+                <VoiceInterviewer roomId={roomId} inline={true} />
             </div>
 
             {/* Document Panel */}

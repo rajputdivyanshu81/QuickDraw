@@ -3,7 +3,6 @@ import { useEffect, useState, Suspense } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { Canvas } from "./Canvas";
 import { WS_URL } from "@/config";
-import { VoiceInterviewer } from "./VoiceInterviewer";
 
 export function RoomCanvas({ roomId }: { roomId: string }) {
     const { getToken, isLoaded, isSignedIn } = useAuth();
@@ -86,7 +85,6 @@ export function RoomCanvas({ roomId }: { roomId: string }) {
             }>
                 <Canvas roomId={roomId} socket={socket} token={token} />
             </Suspense>
-            <VoiceInterviewer roomId={roomId} />
         </div>
     );
 }
