@@ -16,6 +16,7 @@
     "@livekit/components-react": "^2.9.23",
     "@livekit/components-styles": "^1.2.0",
     "@repo/ui": "workspace:*",
+    "@vercel/analytics": "^2.0.1",
     "axios": "^1.15.2",
     "framer-motion": "^12.27.5",
     "jspdf": "^4.0.0",

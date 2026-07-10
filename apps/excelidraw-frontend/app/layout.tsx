@@ -3,6 +3,7 @@ import { AIHelp } from "@/components/AIHelp";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from '@clerk/nextjs'
+import { Analytics } from '@vercel/analytics/next';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,6 +38,7 @@ export default function RootLayout({
         >
           <AIHelp />
           {children}
+          <Analytics />
         </body>
       </html>
     </ClerkProvider>
