@@ -1,0 +1,112 @@
+"use client";
+import { useState, useCallback } from 'react';
+import { useAuth } from "@clerk/nextjs";
+import {
+  LiveKitRoom,
+  RoomAudioRenderer,
+  BarVisualizer,
+  VoiceAssistantControlBar,
+  useVoiceAssistant
+} from '@livekit/components-react';
+import '@livekit/components-styles';
+import { HTTP_URL } from '@/config';
+
+export function VoiceInterviewer({ roomId }: { roomId: string }) {
+  const [token, setToken] = useState<string | null>(null);
+  const [url, setUrl] = useState<string | null>(null);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const { getToken } = useAuth();
+
+  const startInterview = useCallback(async () => {
+    setIsConnecting(true);
+    try {
+      const authToken = await getToken();
+      const res = await fetch(`${HTTP_URL}/api/livekit/token`, {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({ roomName: `interview-${roomId}` })
+      });
+      const data = await res.json();
+      setToken(data.token);
+      setUrl(data.url);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsConnecting(false);
+    }
+  }, [roomId, getToken]);
+
+  if (!token || !url) {
+    return (
+      <div className="absolute bottom-6 right-6 z-50">
+        <button
+          onClick={startInterview}
+          disabled={isConnecting}
+          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all hover:scale-105 active:scale-95"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+          {isConnecting ? "Connecting to AI..." : "Start HLD AI Interview"}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="absolute bottom-6 right-6 z-50 w-80 bg-[#1e1e1e] rounded-xl shadow-2xl p-5 border border-gray-800">
+      <LiveKitRoom
+        serverUrl={url}
+        token={token}
+        connect={true}
+        audio={true}
+        video={false}
+      >
+        <RoomAudioRenderer />
+        <AgentUI onClose={() => setToken(null)} />
+      </LiveKitRoom>
+    </div>
+  );
+}
+
+function AgentUI({ onClose }: { onClose: () => void }) {
+  const { state, audioTrack } = useVoiceAssistant();
+  
+  return (
+    <div className="flex flex-col items-center space-y-4">
+      <div className="flex justify-between w-full items-center">
+        <div className="text-white font-semibold flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${state === 'connected' ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`}></div>
+            AI Interviewer
+        </div>
+        <button onClick={onClose} className="text-gray-400 hover:text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      
+      <div className="text-sm text-gray-400 text-center">
+        {state === 'connected' ? 'Listening and thinking...' : 'Connecting to AI model...'}
+      </div>
+      
+      <div className="h-16 w-full flex items-center justify-center bg-[#121212] rounded-lg overflow-hidden relative">
+        {audioTrack ? (
+          <BarVisualizer
+            state={state}
+            trackRef={audioTrack}
+            className="w-full h-full text-indigo-500"
+            barCount={5}
+            options={{ minHeight: 4 }}
+          />
+        ) : (
+            <div className="animate-pulse flex space-x-2">
+                <div className="w-1.5 h-4 bg-indigo-500/50 rounded-full"></div>
+                <div className="w-1.5 h-6 bg-indigo-500/50 rounded-full"></div>
+                <div className="w-1.5 h-4 bg-indigo-500/50 rounded-full"></div>
+            </div>
+        )}
+      </div>
+      <VoiceAssistantControlBar />
+    </div>
+  );
+}
