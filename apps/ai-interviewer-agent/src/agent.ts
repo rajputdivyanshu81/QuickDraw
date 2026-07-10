@@ -42,10 +42,14 @@ export default defineAgent({
 cli.runApp({ agent: fileURLToPath(import.meta.url) });
 
 // Dummy HTTP server so Render can deploy this as a Free "Web Service"
-const port = process.env.PORT || 8080;
-http.createServer((req, res) => {
-  res.writeHead(200);
-  res.end('AI Agent is running!');
-}).listen(port, () => {
-  console.log(`Health check server listening on port ${port}`);
-});
+// We only start this in the master process, not in LiveKit child processes
+const isChildProcess = process.argv.some(arg => arg.includes('job_proc_lazy_main.js') || arg.includes('job_main.js'));
+if (!isChildProcess) {
+  const port = process.env.PORT || 8080;
+  http.createServer((req, res) => {
+    res.writeHead(200);
+    res.end('AI Agent is running!');
+  }).listen(port, () => {
+    console.log(`Health check server listening on port ${port}`);
+  });
+}
