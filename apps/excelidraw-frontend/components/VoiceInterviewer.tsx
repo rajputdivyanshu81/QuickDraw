@@ -9,7 +9,7 @@ import {
   useVoiceAssistant
 } from '@livekit/components-react';
 import '@livekit/components-styles';
-import { HTTP_URL } from '@/config';
+import { HTTP_BACKEND } from '@/config';
 
 export function VoiceInterviewer({ roomId }: { roomId: string }) {
   const [token, setToken] = useState<string | null>(null);
@@ -21,7 +21,7 @@ export function VoiceInterviewer({ roomId }: { roomId: string }) {
     setIsConnecting(true);
     try {
       const authToken = await getToken();
-      const res = await fetch(`${HTTP_URL}/api/livekit/token`, {
+      const res = await fetch(`${HTTP_BACKEND}/api/livekit/token`, {
         method: 'POST',
         headers: { 
             'Content-Type': 'application/json',
