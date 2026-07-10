@@ -1,0 +1,25 @@
+{
+  "name": "ai-interviewer-agent",
+  "version": "1.0.0",
+  "description": "LiveKit AI Voice Agent for HLD Interviews",
+  "main": "dist/agent.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/agent.ts",
+    "build": "tsc",
+    "start": "node dist/agent.js"
+  },
+  "dependencies": {
+    "@livekit/agents": "latest",
+    "@livekit/agents-plugin-openai": "latest",
+    "@livekit/agents-plugin-deepgram": "latest",
+    "@livekit/rtc-node": "latest",
+    "dotenv": "^16.4.7",
+    "livekit-server-sdk": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.0.0"
+  }
+}
