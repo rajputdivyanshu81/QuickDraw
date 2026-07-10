@@ -6,6 +6,7 @@ import cors from "cors";
 import PptxGenJS from "pptxgenjs";
 import dotenv from "dotenv";
 import { generatePaymentHash, verifyPaymentResponse } from './payment.js';
+import { AccessToken } from 'livekit-server-sdk';
 
 dotenv.config();
 
@@ -471,6 +472,43 @@ app.post("/api/payment-callback", async (req: Request, res: Response) => {
     } catch (e) {
         console.error("Payment callback processing error:", e);
         res.status(500).send("Error");
+    }
+});
+
+app.post("/api/livekit/token", middleware, async (req: Request, res: Response) => {
+    // @ts-ignore
+    const userId = req.userId;
+    const roomName = req.body.roomName || `interview-${userId}`;
+    const participantName = `User-${userId}`;
+
+    if (!process.env.LIVEKIT_API_KEY || !process.env.LIVEKIT_API_SECRET) {
+        res.status(500).json({ message: "LiveKit credentials missing in environment" });
+        return;
+    }
+
+    try {
+        const at = new AccessToken(process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET, {
+            identity: participantName,
+            name: participantName,
+        });
+
+        at.addGrant({ 
+            roomJoin: true, 
+            room: roomName, 
+            canPublish: true, 
+            canSubscribe: true 
+        });
+
+        const token = await at.toJwt();
+
+        res.json({ 
+            token, 
+            roomName, 
+            url: process.env.LIVEKIT_URL 
+        });
+    } catch (e) {
+        console.error("LiveKit token generation error:", e);
+        res.status(500).json({ message: "Failed to generate LiveKit token" });
     }
 });
 
