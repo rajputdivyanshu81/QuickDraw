@@ -6,6 +6,8 @@ import cors from "cors";
 import PptxGenJS from "pptxgenjs";
 import dotenv from "dotenv";
 import { generatePaymentHash, verifyPaymentResponse } from './payment.js';
+import { AccessToken } from 'livekit-server-sdk';
+import { rateLimit } from 'express-rate-limit';
 
 dotenv.config();
 
@@ -471,6 +473,51 @@ app.post("/api/payment-callback", async (req: Request, res: Response) => {
     } catch (e) {
         console.error("Payment callback processing error:", e);
         res.status(500).send("Error");
+    }
+});
+
+const tokenRateLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 20, // Limit each IP to 20 requests per `window` (here, per 1 minute)
+    message: { message: 'Too many token requests from this IP, please try again later' },
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+});
+
+app.post("/api/livekit/token", tokenRateLimiter, middleware, async (req: Request, res: Response) => {
+    // @ts-ignore
+    const userId = req.userId;
+    const roomName = req.body.roomName || `interview-${userId}`;
+    const participantName = `User-${userId}`;
+
+    if (!process.env.LIVEKIT_API_KEY || !process.env.LIVEKIT_API_SECRET) {
+        res.status(500).json({ message: "LiveKit credentials missing in environment" });
+        return;
+    }
+
+    try {
+        const at = new AccessToken(process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET, {
+            identity: participantName,
+            name: participantName,
+        });
+
+        at.addGrant({ 
+            roomJoin: true, 
+            room: roomName, 
+            canPublish: true, 
+            canSubscribe: true 
+        });
+
+        const token = await at.toJwt();
+
+        res.json({ 
+            token, 
+            roomName, 
+            url: process.env.LIVEKIT_URL 
+        });
+    } catch (e) {
+        console.error("LiveKit token generation error:", e);
+        res.status(500).json({ message: "Failed to generate LiveKit token" });
     }
 });
 
