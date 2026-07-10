@@ -5,9 +5,9 @@
   "main": "dist/agent.js",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/agent.ts",
+    "dev": "tsx watch src/agent.ts dev",
     "build": "tsc",
-    "start": "node dist/agent.js"
+    "start": "node dist/agent.js start"
   },
   "dependencies": {
     "@livekit/agents": "latest",
