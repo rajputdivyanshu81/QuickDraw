@@ -13,7 +13,7 @@
     "@microsoft/eslint-formatter-sarif": "^3.1.0",
     "eslint": "^9.39.2",
     "prettier": "^3.4.2",
-    "turbo": "^2.4.0",
+    "turbo": "^2.9.14",
     "typescript": "5.7.3"
   },
   "packageManager": "pnpm@9.12.0",
