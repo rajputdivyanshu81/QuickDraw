@@ -13,7 +13,7 @@ export default function ContributingPage() {
       
       <h3>Prerequisites</h3>
       <ul>
-        <li><strong>Node.js</strong>: Version 20 or 22</li>
+        <li><strong>Node.js</strong>: Version 22</li>
         <li><strong>pnpm</strong>: Version 9.x (Required for monorepo)</li>
         <li><strong>Docker</strong>: For running the local database</li>
       </ul>

@@ -5,7 +5,7 @@ This guide outlines the process for contributing to the QuickDraw project.
 ## Getting Started
 
 ### Prerequisites
-- Node.js: Use version 20 or 22
+- Node.js: Use version 22
 - pnpm: Version 9.x is required for monorepo management
 - Docker & Docker Compose: For running the local database and infrastructure
 
